@@ -624,6 +624,8 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
 
 function banner(msg) { $('banner').textContent = msg || ''; $('banner').classList.toggle('on', !!msg); }
 
+// Chrome on Android has Web Serial for Bluetooth only, so USB there goes through WebUSB
+const USE_WEBUSB = 'usb' in navigator && (!('serial' in navigator) || /Android/i.test(navigator.userAgent));
 if (!('serial' in navigator) && !('usb' in navigator)) {
   banner('This browser cannot reach USB devices. Use Chrome or Edge on a PC, or Chrome on Android.');
   $('btnConnect').disabled = true;
@@ -698,9 +700,9 @@ class UsbSerialPort {
   }
 }
 
-// Web Serial where the browser has it (PC), otherwise WebUSB (Android)
+// Web Serial on a PC, WebUSB on Android or where Web Serial is missing
 async function choosePort() {
-  if ('serial' in navigator) return navigator.serial.requestPort({ filters: [{ usbVendorId: 0x303a }] });
+  if (!USE_WEBUSB) return navigator.serial.requestPort({ filters: [{ usbVendorId: 0x303a }] });
   return new UsbSerialPort(await navigator.usb.requestDevice({ filters: [{ vendorId: 0x303a }] }));
 }
 
@@ -725,7 +727,7 @@ $('btnConnect').onclick = async () => {
     await openPort(p);
   } catch (e) {
     if (e.name === 'NotFoundError') return; // nothing picked
-    banner('serial' in navigator
+    banner(!USE_WEBUSB
       ? 'Could not open the port: ' + e.message + '. Is Mission Planner or a terminal using it?'
       : 'Could not open the board: ' + e.message + '. Close other USB serial apps and plug it in again.');
   }
@@ -749,16 +751,16 @@ async function closePort() {
 }
 
 // The board re-enumerates after a reboot: reconnect to the same port automatically
-navigator.serial && navigator.serial.addEventListener('connect', async ev => {
+!USE_WEBUSB && navigator.serial && navigator.serial.addEventListener('connect', async ev => {
   if (wantConnected && !port) {
     await sleep(1500);
     try { await openPort(ev.target); } catch (e) { banner('Reconnect failed: ' + e.message); }
   }
 });
-navigator.serial && navigator.serial.addEventListener('disconnect', () => {
+!USE_WEBUSB && navigator.serial && navigator.serial.addEventListener('disconnect', () => {
   if (port) { closePort(); if (wantConnected) banner('Board disconnected, waiting for it to come back…'); }
 });
-if (!('serial' in navigator) && navigator.usb) {
+if (USE_WEBUSB) {
   navigator.usb.addEventListener('connect', async ev => {
     if (wantConnected && !port && ev.device.vendorId === 0x303a) {
       await sleep(1500);
