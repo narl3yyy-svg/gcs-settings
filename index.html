@@ -332,27 +332,28 @@
 
     </div>
 
-  <div class="card mt">
-    <h2>Message history (kept by the ground station)</h2>
-    <p class="note" style="margin-top:0">The ground station remembers the aircraft's last 100 messages even when no PC is connected, so you can see what happened during a flight. Cleared when the ground station loses power.</p>
-    <div class="row">
-      <button id="hLoad" disabled>Load message history</button>
-      <button id="hSave" class="ghost small">Save as text</button>
-      <span id="hStatus" class="note" style="margin:0"></span>
+    <!-- Always visible on the Air tab (even with no aircraft linked) -->
+    <div class="card mt">
+      <h2>Message history (kept by the ground station)</h2>
+      <p class="note" style="margin-top:0">The ground station remembers the aircraft's last 100 messages even when no PC is connected, so you can see what happened during a flight. Cleared when the ground station loses power.</p>
+      <div class="row">
+        <button id="hLoad" disabled>Load message history</button>
+        <button id="hSave" class="ghost small">Save as text</button>
+        <span id="hStatus" class="note" style="margin:0"></span>
+      </div>
+      <div class="scroll" style="max-height:340px;overflow-y:auto"><table id="hTable"><thead><tr><th>When</th><th>Level</th><th>Message</th></tr></thead><tbody></tbody></table></div>
     </div>
-    <div class="scroll" style="max-height:340px;overflow-y:auto"><table id="hTable"><thead><tr><th>When</th><th>Level</th><th>Message</th></tr></thead><tbody></tbody></table></div>
-  </div>
-  <div class="card mt">
-    <h2>Flight logs (stored on the aircraft)</h2>
-    <p class="note" style="margin-top:0">ArduPilot's own .bin logs. Over the RFD900 a download runs at roughly 3–8 KB/s (1 MB takes a few minutes). Blocked while armed.</p>
-    <div class="row">
-      <button id="lList" disabled>List logs</button>
-      <button id="lErase" class="ghost danger" disabled>Erase all logs</button>
-      <span id="lStatus" class="note" style="margin:0"></span>
+    <div class="card mt">
+      <h2>Flight logs (stored on the aircraft)</h2>
+      <p class="note" style="margin-top:0">ArduPilot's own .bin logs. Over the RFD900 a download runs at roughly 3–8 KB/s (1 MB takes a few minutes). Blocked while armed.</p>
+      <div class="row">
+        <button id="lList" disabled>List logs</button>
+        <button id="lErase" class="ghost danger" disabled>Erase all logs</button>
+        <span id="lStatus" class="note" style="margin:0"></span>
+      </div>
+      <div class="bar" style="margin:6px 0"><span id="lBar" style="width:0%"></span></div>
+      <div class="scroll"><table id="lTable"><thead><tr><th>#</th><th>Date (UTC)</th><th>Size</th><th></th></tr></thead><tbody></tbody></table></div>
     </div>
-    <div class="bar" style="margin:6px 0"><span id="lBar" style="width:0%"></span></div>
-    <div class="scroll"><table id="lTable"><thead><tr><th>#</th><th>Date (UTC)</th><th>Size</th><th></th></tr></thead><tbody></tbody></table></div>
-  </div>
   </section>
 
   <!-- ===================================================== ELRS -->
@@ -573,7 +574,7 @@
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
-let port = null, reader = null, writer = null, rxText = '', atWaiters = [], pollTimer = null, wantConnected = false;
+let port = null, reader = null, writer = null, rxText = '', pollTimer = null, wantConnected = false;
 let currentTab = 'status';
 const state = { status: null, rfdTempG: null, rfdTempA: null };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -707,7 +708,7 @@ async function choosePort() {
 }
 
 async function openPort(p) {
-  await p.open({ baudRate: 115200, bufferSize: 65536 });
+  await p.open({ baudRate: 115200, bufferSize: 1 << 20 }); // room for telemetry while the tab is busy
   // Drop RTS before DTR: RTS high with DTR low resets the ESP32's USB serial
   try { await p.setSignals({ requestToSend: false }); await p.setSignals({ dataTerminalReady: false }); } catch (e) {}
   port = p;
@@ -741,7 +742,8 @@ async function closePort() {
   closing = true;
   stopPoll();
   if (gpsEchoOn) { send('#GCS gpsecho 0'); gpsEchoOn = false; }
-  try { if (writer) { await writer.ready; writer.releaseLock(); } } catch (e) {}
+  // Don't wait forever on a stalled writer: that would leave closing stuck and block reconnects
+  try { if (writer) { await Promise.race([writer.ready, sleep(500)]); writer.releaseLock(); } } catch (e) {}
   try { if (reader) await reader.cancel(); } catch (e) {}
   try { if (readDone) await readDone; } catch (e) {} // the read loop must let go before close()
   try { if (port) await port.close(); } catch (e) { banner('Could not close the port: ' + e.message); }
@@ -787,14 +789,29 @@ async function readLoopBody() {
         onText(s);
       }
     } catch (e) {
-      break;
+      // Web Serial: a non-fatal error (buffer overrun after the tab was busy or in the background,
+      // framing error) ends this stream and port.readable hands out a new one, so keep reading.
+      // Breaking out here used to stop all replies until the board was unplugged and replugged.
+      if (closing || !port || USE_WEBUSB) break;
+      await sleep(50);
     } finally {
       try { reader.releaseLock(); } catch (e) {}
     }
   }
+  if (port && !closing) banner('Lost the serial stream from the board. Press Disconnect, then Connect.');
 }
 
-function sendBytes(bytes) { if (writer) writer.write(bytes).catch(() => {}); }
+function sendBytes(bytes) {
+  const w = writer;
+  if (!w) return;
+  w.write(bytes).catch(() => {
+    // A failed write leaves this writer dead and every later command would vanish silently:
+    // take a fresh one from the port (Web Serial makes a new writable stream after an error)
+    if (w !== writer || closing || !port) return;
+    try { w.releaseLock(); } catch (e) {}
+    try { writer = port.writable ? port.writable.getWriter() : null; } catch (e) { writer = null; }
+  });
+}
 function send(text) { sendBytes(new TextEncoder().encode(text + (text === '+++' ? '' : '\r'))); }
 
 // ==================================================================== incoming text
@@ -805,26 +822,40 @@ function onText(s) {
   while ((i = rxText.indexOf('#GCS {')) >= 0) {
     const end = rxText.indexOf('\n', i);
     if (end < 0) break;
+    // A reply that lost its newline must not swallow the complete reply that follows it
+    const later = rxText.lastIndexOf('#GCS {', end);
+    if (later > i) { feedAt(rxText.slice(0, later)); rxText = rxText.slice(later); continue; }
     const json = rxText.slice(i + 5, end);
     feedAt(rxText.slice(0, i));
     rxText = rxText.slice(end + 1);
-    try { onReply(JSON.parse(json)); } catch (e) {}
+    const r = parseReply(json);
+    if (r) onReply(r);
   }
-  // Hold back only a tail that can still become "#GCS {...}": a random '#' in binary telemetry must
-  // not hold back a radio reply that follows it (SiK goes quiet in command mode, so nothing would push it out)
-  const tail = rxText.lastIndexOf('#');
-  const rest = tail >= 0 ? rxText.slice(tail) : '';
-  if (tail >= 0 && rest.length < 800 && ('#GCS {'.startsWith(rest) || rest.startsWith('#GCS {'))) {
-    feedAt(rxText.slice(0, tail));
-    rxText = rest;
-  } else {
-    feedAt(rxText);
-    rxText = '';
+  // Hold back an unfinished "#GCS {...": settings replies (ATI5 + RTI5) run well past 1 KB and
+  // arrive in many USB packets, so the old 800-character limit threw long replies away
+  const start = rxText.lastIndexOf('#GCS {');
+  if (start >= 0 && rxText.length - start < 65536) {
+    feedAt(rxText.slice(0, start));
+    rxText = rxText.slice(start);
+    return;
   }
+  // Otherwise hold back only an ending that could still grow into "#GCS {"
+  let keep = 0;
+  for (let n = Math.min(5, rxText.length); n > 0; n--) if (rxText.endsWith('#GCS {'.slice(0, n))) { keep = n; break; }
+  feedAt(rxText.slice(0, rxText.length - keep));
+  rxText = rxText.slice(rxText.length - keep);
+}
+// Telemetry bytes can get mixed into a reply line: if the line doesn't parse, try it with them removed
+function parseReply(json) {
+  try { return JSON.parse(json); } catch (e) {}
+  try { return JSON.parse(json.replace(/[^\x20-\x7e]/g, '')); } catch (e) {}
+  return null;
 }
 
-// SiK replies arrive mixed into binary aircraft telemetry. atBuf keeps the printable text for matching;
-// the console shows only lines that look like radio replies.
+// SiK replies arrive mixed into binary aircraft telemetry. Radio command sessions are run by the
+// ground-station firmware via "#GCS at …" and return structured JSON (see runAtJob / radioSession).
+// The page no longer enters +++ command mode itself, so atActive stays false and feedAt is a no-op.
+// Kept as a defensive filter in case mixed text still appears on the stream.
 let atBuf = '', atActive = false, atLine = '';
 const AT_LINE = /^(OK|ERROR|AT\S*|RT\S*|RFD.*|SiK.*|[SR]\d+:\S+=.*|L\/R .*|\S+=\S+.*|\[\d+\].*|Board.*|Frequency.*|Version.*)$/;
 function feedAt(s) {
@@ -842,23 +873,11 @@ function feedAt(s) {
       atLine += ch;
     }
   }
-  atWaiters = atWaiters.filter(w => {
-    if (w.re.test(atBuf)) { w.resolve(atBuf); return false; }
-    return true;
-  });
 }
 function logAt(line) {
   const log = $('atLog');
   log.textContent = (log.textContent + line + '\n').slice(-20000);
   log.scrollTop = log.scrollHeight;
-}
-
-function waitFor(re, ms) {
-  return new Promise((resolve, reject) => {
-    const w = { re, resolve };
-    atWaiters.push(w);
-    setTimeout(() => { atWaiters = atWaiters.filter(x => x !== w); reject(new Error('timeout')); }, ms);
-  });
 }
 
 // ==================================================================== status
@@ -867,6 +886,7 @@ function onReply(r) {
   if (r.nmea !== undefined) { onNmea(r.nmea); return; }
   if (r.at !== undefined || r.atError !== undefined) { if (atJobPending) atJobPending(r); return; }
   if (r.msgLog !== undefined || r.msgLogEnd !== undefined) { onMsgLog(r); return; }
+  if (r.error && atJobPending) { atJobPending({ atError: r.error }); return; } // e.g. busy: say so instead of timing out
   if (r.error) { banner('Board: ' + r.error); return; }
   if (r.ok) { banner(''); toast(r.ok); return; }
   if (!r.fw) return;
@@ -1132,6 +1152,9 @@ function onMav(id, sys, comp, d) {
 // GCS heartbeat + stream requests, as Mission Planner does (only while this page holds the port)
 let mavSeq = 0;
 function mavSend(msgid, payload, sys = 255, comp = 190) {
+  // While the radios are in command mode these bytes would land in the SiK command parser (or break
+  // its +++ guard time); the retry loops (params, mission, logs, commands) send them again later
+  if (rfdBusy) return;
   const len = payload.length;
   const f = new Uint8Array(10 + len + 2);
   f.set([0xfd, len, 0, 0, mavSeq++ & 0xff, sys, comp, msgid & 0xff, (msgid >> 8) & 0xff, (msgid >> 16) & 0xff]);
@@ -1615,16 +1638,27 @@ const replyOf = (r, cmd) => { const x = (r.at || []).find(e => e.cmd === cmd); r
 const replyOk = text => /(^|\n)OK($|\n)/.test(text) || /OK$/.test(text);
 
 // Runs a session with the page's own traffic paused; returns the reply, or null after showing the error
+// Read-only sessions are tried a second time on their own: a missed +++ or a lost reply is usually
+// fine on the next go. Sessions that write, reset or reboot a radio are never repeated.
+const readOnlyCmd = c => !/=|&W|&F|&UPDATE|&T|&R|&P|^(AT|RT)Z$|^(AT|RT)O$/i.test(c);
 async function radioSession(cmds, show) {
   if (rfdBusy) { show('A radio command is already running.', 'warn'); return null; }
   rfdBusy = true; markFields();
+  const tries = cmds.every(readOnlyCmd) ? 2 : 1;
   try {
-    const r = await runAtJob(cmds);
-    if (r.atError) { show(r.atError.charAt(0).toUpperCase() + r.atError.slice(1) + '.', 'bad'); return null; }
-    return r;
-  } catch (e) {
-    show('Error: ' + e.message, 'bad');
-    return null;
+    for (let attempt = 1; ; attempt++) {
+      let err;
+      try {
+        const r = await runAtJob(cmds);
+        if (!r.atError) return r;
+        err = r.atError.charAt(0).toUpperCase() + r.atError.slice(1) + '.';
+      } catch (e) {
+        err = 'Error: ' + e.message;
+      }
+      if (attempt >= tries || !port) { show(err, 'bad'); return null; }
+      show(`${err} Trying again…`, 'warn');
+      await sleep(1500); // let the radio settle back into data mode
+    }
   } finally {
     rfdBusy = false; markFields();
   }
@@ -1736,7 +1770,7 @@ $('btnAt').onclick = () => {
   if (!c) return;
   if (!/^(AT|RT)/i.test(c)) { logAt('(commands start with AT or RT)'); return; }
   $('atCmd').value = '';
-  consoleRun(c.toUpperCase().startsWith('AT') || c.toUpperCase().startsWith('RT') ? c : c);
+  consoleRun(c);
 };
 $('atCmd').onkeydown = e => { if (e.key === 'Enter') $('btnAt').click(); };
 
