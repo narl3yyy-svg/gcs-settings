@@ -5,6 +5,15 @@ https://narl3yyy-svg.github.io/gcs-settings/ (Chrome or Edge on a PC, Chrome on 
 
 ## Changes
 
+### 2026-11-06: Direct RFD900 mode
+
+- The Connect picker lists every COM port, not only ESP32 boards.
+- A plain RFD900 on a USB-serial cable (no ESP32) is detected automatically. The page then runs the
+  radio command sessions itself (+++, AT/RT commands, ATO) at the baud rate chosen next to Connect
+  (57600 by default), so Load/Save settings, Read temperatures and the AT console work.
+  ESP32-only features (ELRS, bind, GPS forwarding, board status) need the ESP32.
+- Nothing changes when an ESP32 ground station is connected.
+
 ### 2026-10-19: RFD900 settings and temperature reads fixed
 
 **Problem:** "Load settings" and "Read RFD900 temperatures" sometimes failed with

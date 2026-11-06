@@ -110,6 +110,11 @@
   <h1 id="devName">RFD/ESP v1.7 ground station</h1>
   <div class="row" style="margin:0">
     <span id="connState" class="pill quiet">Not connected</span>
+    <select id="directBaud" title="Baud rate used when the port is a plain RFD900 (no ESP32). The ESP32 always uses 115200." style="width:auto">
+      <option value="57600" selected>RFD 57600</option><option value="115200">RFD 115200</option>
+      <option value="38400">RFD 38400</option><option value="19200">RFD 19200</option><option value="9600">RFD 9600</option>
+      <option value="230400">RFD 230400</option>
+    </select>
     <button id="btnConnect">Connect</button>
     <button id="btnDisconnect" class="ghost" disabled>Disconnect</button>
   </div>
@@ -708,18 +713,90 @@ async function choosePort() {
   return new UsbSerialPort(await navigator.usb.requestDevice({ filters: [{ vendorId: 0x303a }] }));
 }
 
+// Direct mode: the port is a plain USB-serial adapter on an RFD900 (no ESP32 in between).
+// The page then does the ESP32's job for radio commands itself: guard time, +++, AT/RT commands, ATO.
+let direct = false;
+function isEspPort(p) {
+  if (USE_WEBUSB) return true; // WebUSB only ever offers the ESP32
+  try { return p.getInfo().usbVendorId === 0x303a; } catch (e) { return true; }
+}
+
 async function openPort(p) {
-  await p.open({ baudRate: 115200, bufferSize: 1 << 20 }); // room for telemetry while the tab is busy
+  direct = !isEspPort(p);
+  const baudRate = direct ? Number($('directBaud').value) || 57600 : 115200;
+  await p.open({ baudRate, bufferSize: 1 << 20 }); // room for telemetry while the tab is busy
   // Drop RTS before DTR: RTS high with DTR low resets the ESP32's USB serial
-  try { await p.setSignals({ requestToSend: false }); await p.setSignals({ dataTerminalReady: false }); } catch (e) {}
+  if (!direct) try { await p.setSignals({ requestToSend: false }); await p.setSignals({ dataTerminalReady: false }); } catch (e) {}
   port = p;
   writer = port.writable.getWriter();
   setConnected(true);
-  banner('');
+  banner(direct ? `Direct RFD900 mode at ${baudRate} baud: radio settings, temperatures and the AT console work; ESP32-only features (ELRS, bind, GPS forwarding, status) do not.` : '');
   readLoop();
   send('#GCS hello');
   if (currentTab === 'gcs') setGpsEcho(true, true);
   startPoll();
+}
+
+// ESP32 commands in direct mode: run "#GCS at" sessions here, drop the rest
+let directCap = null, directQueue = Promise.resolve();
+function directCommand(text) {
+  if (text.startsWith('#GCS at ')) {
+    const cmds = text.slice(8).split(';').filter(Boolean);
+    directQueue = directQueue.then(() => directAt(cmds)).then(onReply, e => onReply({ atError: e.message }));
+    return;
+  }
+  if (/^#GCS (status|hello|gpsecho)/.test(text)) return; // background traffic, nothing to say
+  banner('That needs the ESP32 ground station; this port is a plain RFD900.');
+}
+
+// Wait for the captured text to satisfy done(), or for it to go quiet after something arrived
+async function directWait(done, maxMs, quietMs) {
+  const t0 = Date.now();
+  let lastLen = 0, lastChange = Date.now();
+  while (Date.now() - t0 < maxMs) {
+    await sleep(50);
+    if (!port) throw new Error('not connected');
+    if (directCap.length !== lastLen) { lastLen = directCap.length; lastChange = Date.now(); }
+    if (done && done(directCap)) return;
+    if (quietMs && lastLen && Date.now() - lastChange >= quietMs) return;
+  }
+}
+const directText = s => s.replace(/[^\x20-\x7e\r\n]/g, '').split(/\r\n|\r|\n/).map(l => l.trim()).filter(Boolean);
+const endsOk = s => /(^|[\r\n])(OK|ERROR)\s*$/.test(s.replace(/[^\x20-\x7e\r\n]/g, ''));
+
+async function directAt(cmds) {
+  atActive = true; atLine = '';
+  try {
+    // Enter command mode: 1 s of silence, +++, 1 s of silence, then "OK"
+    let inCmd = false;
+    for (let attempt = 0; attempt < 2 && !inCmd; attempt++) {
+      await sleep(1200);
+      directCap = '';
+      sendBytes(new TextEncoder().encode('+++'));
+      await directWait(s => /OK/.test(s), 2500, 0);
+      inCmd = /OK/.test(directCap);
+      if (!inCmd) { directCap = ''; send('AT'); await directWait(endsOk, 800, 0); inCmd = endsOk(directCap); } // already in command mode
+    }
+    if (!inCmd) throw new Error(`the radio did not enter command mode (is it set to ${port ? $('directBaud').value : '?'} baud, and is no other program using the port?)`);
+    const at = [];
+    let rebooted = false;
+    for (const cmd of cmds) {
+      directCap = '';
+      send(cmd);
+      const remote = /^RT/i.test(cmd);
+      // ATI5 and friends end without OK: stop when the radio goes quiet. Remote replies come over the air.
+      await directWait(endsOk, remote ? 6000 : 2500, remote ? 1200 : 400);
+      const lines = directText(directCap);
+      if (lines.length && lines[0].toUpperCase() === cmd.toUpperCase()) lines.shift(); // command echo
+      at.push({ cmd, reply: lines.join('\n') });
+      if (/^(AT|RT)Z$/i.test(cmd) && /^AT/i.test(cmd)) rebooted = true;
+    }
+    if (!rebooted) { directCap = ''; send('ATO'); await directWait(endsOk, 1000, 300); }
+    return { at };
+  } finally {
+    directCap = null;
+    atActive = false;
+  }
 }
 
 $('btnConnect').onclick = async () => {
@@ -787,6 +864,7 @@ async function readLoopBody() {
         // Byte-for-byte to text: the stream mixes MAVLink binary with text lines
         let s = '';
         for (const b of value) s += String.fromCharCode(b);
+        if (directCap !== null) directCap += s;
         onText(s);
       }
     } catch (e) {
@@ -813,7 +891,9 @@ function sendBytes(bytes) {
     try { writer = port.writable ? port.writable.getWriter() : null; } catch (e) { writer = null; }
   });
 }
-function send(text) { sendBytes(new TextEncoder().encode(text + (text === '+++' ? '' : '\r'))); }
+function send(text) {
+  if (direct && text.startsWith('#GCS')) { directCommand(text); return; }
+  sendBytes(new TextEncoder().encode(text + (text === '+++' ? '' : '\r'))); }
 
 // ==================================================================== incoming text
 function onText(s) {
