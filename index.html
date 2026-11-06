@@ -703,7 +703,8 @@ class UsbSerialPort {
 
 // Web Serial on a PC, WebUSB on Android or where Web Serial is missing
 async function choosePort() {
-  if (!USE_WEBUSB) return navigator.serial.requestPort({ filters: [{ usbVendorId: 0x303a }] });
+  // No filter on a PC: list every COM port (ESP32 boards and plain USB-serial adapters such as an RFD900's FTDI cable)
+  if (!USE_WEBUSB) return navigator.serial.requestPort();
   return new UsbSerialPort(await navigator.usb.requestDevice({ filters: [{ vendorId: 0x303a }] }));
 }
 
