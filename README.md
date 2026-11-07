@@ -5,6 +5,34 @@ https://narl3yyy-svg.github.io/gcs-settings/ (Chrome or Edge on a PC, Chrome on 
 
 ## Changes
 
+### 2026-11-07: Offline maps
+
+A new **Offline maps** section on the Ground station tab (just above the NMEA console) lets the
+map work with no internet. Map data is saved as files in a folder you choose on the PC or a USB
+drive, never inside the browser.
+
+- **Maps folder:** pick any folder. Each saved area is a subfolder holding the map tiles
+  (`<zoom>/<x>/<y>.jpg`) and an `area.json` that describes it. Chrome remembers only which folder
+  was used; after a restart press **Reconnect folder** to allow access again.
+- **Save the area on screen:** pan and zoom the map to the area, give it a name, pick the map
+  (Satellite, Streets or Topographic) and the closest zoom (15–19). The page shows the area in
+  sq mi, the tile count and the approximate size before downloading, and asks for confirmation.
+  Areas are limited to 200 sq mi each. A progress bar and a Stop button are shown; downloading
+  again with the same name resumes and skips tiles already saved.
+- **Saved areas:** lists every area in the folder. **Show on map** loads one (switch between them
+  any time); **Hide** removes it. Saved areas also appear in the map's layer list.
+- **Street map file (.pmtiles):** opens one vector street map file, which can cover a state or
+  the whole US (about 15–25 GB for the US), read straight from disk. It appears as
+  "Offline street map" in the layer list, with Light, Dark and Grey styles.
+  *How to get a street map file* in the section explains how to cut one out of the free
+  Protomaps / OpenStreetMap build with the `pmtiles` command-line tool.
+- **Page works offline:** the map libraries (Leaflet 1.9.4, PMTiles 4.5.0, protomaps-leaflet
+  5.1.0) are now built into `index.html` instead of loaded from the internet. Press
+  **Save this page to the PC…** once while online, then open the saved file in Chrome or Edge
+  when there is no internet. Radios, saved areas and street map files all work from it.
+- Online maps (Esri Satellite, Streets, Topographic) work as before when there is internet.
+  Saved imagery is © Esri and its providers; save only areas needed for your own flying.
+
 ### 2026-11-06: Direct RFD900 mode
 
 - The Connect picker lists every COM port, not only ESP32 boards.

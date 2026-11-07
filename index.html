@@ -1155,6 +1155,54 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <p class="note" id="mapNote">Map imagery from Esri (switch layers at top right) needs an internet connection. For flying without internet, use Offline maps below.</p>
     </div>
 
+    <div class="card mt">
+      <h2>Mission</h2>
+      <div class="row" style="margin-top:0">
+        <button id="mPlan" class="ghost">Add waypoints: off</button>
+        <label>New item <select id="mNewCmd"><option value="16">Waypoint</option><option value="22">Takeoff</option><option value="19">Loiter (time)</option><option value="21">Land</option><option value="20">Return to launch</option><option value="178">Change speed</option></select></label>
+        <label>Altitude <input id="mAlt" type="number" value="30" min="1" max="1000" style="width:80px"> m</label>
+        <button id="mAddItem" class="ghost">Add item</button>
+      </div>
+      <div class="row">
+        <button id="mRead" disabled>Read from aircraft</button>
+        <button id="mWrite" disabled>Write to aircraft</button>
+        <button id="mStart" class="ghost danger" disabled>Start mission</button>
+        <span style="flex:1"></span>
+        <button id="mSave" class="ghost small">Save file</button>
+        <button id="mLoad" class="ghost small">Load file</button>
+        <input id="mFile" type="file" accept=".waypoints,.txt,.mission" style="display:none">
+        <button id="mClear" class="ghost small danger">Clear list</button>
+        <button id="mClearAc" class="ghost small danger" disabled>Clear on aircraft</button>
+      </div>
+      <div class="scroll">
+        <div class="scroll"><table id="mTable"><thead><tr><th>#</th><th>Command</th><th>Alt (m)</th><th>Param</th><th>Latitude</th><th>Longitude</th><th>Leg</th><th></th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div id="mStatus" class="note">Turn on <b>Add waypoints</b>, then click the map. Drag markers to move them. Files use Mission Planner's .waypoints format.</div>
+    </div>
+    <div class="grid mt">
+      <div class="card">
+        <h2>Sky view</h2>
+        <svg id="sky" viewBox="-110 -110 220 220" width="100%" style="max-width:300px;display:block;margin:0 auto" role="img" aria-label="Satellites by position in the sky"></svg>
+        <p class="note" style="text-align:center">Centre = overhead, ring = horizon. Filled = signal above 25 dB-Hz.</p>
+      </div>
+      <div class="card">
+        <h2>Signal strength</h2>
+        <div id="snrList" class="scroll"></div>
+      </div>
+      <div class="card">
+        <h2>Module</h2>
+        <dl>
+          <dt>Module</dt><dd>YIC61009EBGGB (Beken chipset)</dd>
+          <dt>Output</dt><dd id="gpsRate">–</dd>
+          <dt>Systems seen</dt><dd id="gpsSystems">–</dd>
+          <dt>HDOP</dt><dd id="gpsHdop">–</dd>
+          <dt>Speed / course</dt><dd id="gSpd">–</dd>
+          <dt>NMEA good / bad</dt><dd id="gNmea">–</dd>
+          <dt>UART</dt><dd>115200 baud, ESP GPIO7/6, PPS GPIO8</dd>
+        </dl>
+        <p class="note">No backup battery is fitted, so each power-up is a cold start: allow a few minutes with sky view for the first fix. YIC hasn't published configuration commands for this chipset.</p>
+      </div>
+    </div>
     <div class="card mt" id="omCard">
       <h2>Offline maps</h2>
       <p class="note" style="margin-top:0">Maps are saved as files in a folder on this PC that you choose, not inside the browser. To use this page with no internet, also save the page itself: <button id="omSavePage" class="ghost small" type="button">Save this page to the PC…</button> then open the saved file in Chrome or Edge.</p>
@@ -1213,55 +1261,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <li>Only the area asked for is downloaded. Open the resulting file with <b>Open map file…</b>. It shows as “Offline street map” in the map's layer list (top right).</li>
         </ol>
       </details>
-    </div>
-
-    <div class="card mt">
-      <h2>Mission</h2>
-      <div class="row" style="margin-top:0">
-        <button id="mPlan" class="ghost">Add waypoints: off</button>
-        <label>New item <select id="mNewCmd"><option value="16">Waypoint</option><option value="22">Takeoff</option><option value="19">Loiter (time)</option><option value="21">Land</option><option value="20">Return to launch</option><option value="178">Change speed</option></select></label>
-        <label>Altitude <input id="mAlt" type="number" value="30" min="1" max="1000" style="width:80px"> m</label>
-        <button id="mAddItem" class="ghost">Add item</button>
-      </div>
-      <div class="row">
-        <button id="mRead" disabled>Read from aircraft</button>
-        <button id="mWrite" disabled>Write to aircraft</button>
-        <button id="mStart" class="ghost danger" disabled>Start mission</button>
-        <span style="flex:1"></span>
-        <button id="mSave" class="ghost small">Save file</button>
-        <button id="mLoad" class="ghost small">Load file</button>
-        <input id="mFile" type="file" accept=".waypoints,.txt,.mission" style="display:none">
-        <button id="mClear" class="ghost small danger">Clear list</button>
-        <button id="mClearAc" class="ghost small danger" disabled>Clear on aircraft</button>
-      </div>
-      <div class="scroll">
-        <div class="scroll"><table id="mTable"><thead><tr><th>#</th><th>Command</th><th>Alt (m)</th><th>Param</th><th>Latitude</th><th>Longitude</th><th>Leg</th><th></th></tr></thead><tbody></tbody></table></div>
-      </div>
-      <div id="mStatus" class="note">Turn on <b>Add waypoints</b>, then click the map. Drag markers to move them. Files use Mission Planner's .waypoints format.</div>
-    </div>
-    <div class="grid mt">
-      <div class="card">
-        <h2>Sky view</h2>
-        <svg id="sky" viewBox="-110 -110 220 220" width="100%" style="max-width:300px;display:block;margin:0 auto" role="img" aria-label="Satellites by position in the sky"></svg>
-        <p class="note" style="text-align:center">Centre = overhead, ring = horizon. Filled = signal above 25 dB-Hz.</p>
-      </div>
-      <div class="card">
-        <h2>Signal strength</h2>
-        <div id="snrList" class="scroll"></div>
-      </div>
-      <div class="card">
-        <h2>Module</h2>
-        <dl>
-          <dt>Module</dt><dd>YIC61009EBGGB (Beken chipset)</dd>
-          <dt>Output</dt><dd id="gpsRate">–</dd>
-          <dt>Systems seen</dt><dd id="gpsSystems">–</dd>
-          <dt>HDOP</dt><dd id="gpsHdop">–</dd>
-          <dt>Speed / course</dt><dd id="gSpd">–</dd>
-          <dt>NMEA good / bad</dt><dd id="gNmea">–</dd>
-          <dt>UART</dt><dd>115200 baud, ESP GPIO7/6, PPS GPIO8</dd>
-        </dl>
-        <p class="note">No backup battery is fitted, so each power-up is a cold start: allow a few minutes with sky view for the first fix. YIC hasn't published configuration commands for this chipset.</p>
-      </div>
     </div>
     <div class="card mt">
       <details>
