@@ -5,6 +5,16 @@ https://narl3yyy-svg.github.io/gcs-settings/ (Chrome or Edge on a PC, Chrome on 
 
 ## Changes
 
+### 2026-11-20: Unplugging is detected
+
+- Pulling the USB cable now switches the page to **Not connected** within a couple of seconds,
+  for both the ESP32 ground station and a plain RFD900. Before, the page could keep showing
+  "Connected" because closing an unplugged port could hang.
+- When the device disconnects (unplugged or Disconnect pressed), the RFD900 tab empties both the
+  Ground radio and Aircraft radio columns, the same as after a page refresh, so old settings are
+  never shown for a radio that is not connected. A radio command that was running ends with
+  "the device was disconnected" instead of waiting to time out.
+
 ### 2026-11-07: Offline maps
 
 A new **Offline maps** section on the Ground station tab (just above the NMEA console) lets the

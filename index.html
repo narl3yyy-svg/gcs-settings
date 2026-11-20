@@ -1581,11 +1581,22 @@ async function closePort() {
   // Don't wait forever on a stalled writer: that would leave closing stuck and block reconnects
   try { if (writer) { await Promise.race([writer.ready, sleep(500)]); writer.releaseLock(); } } catch (e) {}
   try { if (reader) await reader.cancel(); } catch (e) {}
-  try { if (readDone) await readDone; } catch (e) {} // the read loop must let go before close()
-  try { if (port) await port.close(); } catch (e) { banner('Could not close the port: ' + e.message); }
+  try { if (readDone) await Promise.race([readDone, sleep(1500)]); } catch (e) {} // the read loop must let go before close()
+  // An unplugged port can leave close() waiting forever: don't let that keep the page showing "Connected"
+  try { if (port) await Promise.race([port.close(), sleep(1500)]); } catch (e) { if (!lost) banner('Could not close the port: ' + e.message); }
   port = reader = writer = readDone = null;
   closing = false;
   setConnected(false);
+  clearRfd();
+}
+// The device went away (cable pulled, board reset): close down and say so
+let lost = false;
+async function portLost() {
+  if (!port || closing) return;
+  lost = true;
+  await closePort();
+  lost = false;
+  banner(wantConnected ? 'Device disconnected. Plug it back in to reconnect, or press Connect.' : 'Device disconnected.');
 }
 
 // The board re-enumerates after a reboot: reconnect to the same port automatically
@@ -1595,8 +1606,8 @@ async function closePort() {
     try { await openPort(ev.target); } catch (e) { banner('Reconnect failed: ' + e.message); }
   }
 });
-!USE_WEBUSB && navigator.serial && navigator.serial.addEventListener('disconnect', () => {
-  if (port) { closePort(); if (wantConnected) banner('Board disconnected, waiting for it to come back…'); }
+!USE_WEBUSB && navigator.serial && navigator.serial.addEventListener('disconnect', ev => {
+  if (port && (!ev.target || ev.target === port || ev.target === navigator.serial)) portLost();
 });
 if (USE_WEBUSB) {
   navigator.usb.addEventListener('connect', async ev => {
@@ -1606,7 +1617,7 @@ if (USE_WEBUSB) {
     }
   });
   navigator.usb.addEventListener('disconnect', ev => {
-    if (port && port.device === ev.device) { closePort(); if (wantConnected) banner('Board disconnected, waiting for it to come back…'); }
+    if (port && port.device === ev.device) portLost();
   });
 }
 
@@ -1635,7 +1646,9 @@ async function readLoopBody() {
       try { reader.releaseLock(); } catch (e) {}
     }
   }
-  if (port && !closing) banner('Lost the serial stream from the board. Press Disconnect, then Connect.');
+  // port.readable is null once the device is gone: treat it as unplugged (after this function has
+  // returned, because closePort waits for it)
+  if (port && !closing) setTimeout(portLost, 0);
 }
 
 function sendBytes(bytes) {
@@ -1645,6 +1658,7 @@ function sendBytes(bytes) {
     // A failed write leaves this writer dead and every later command would vanish silently:
     // take a fresh one from the port (Web Serial makes a new writable stream after an error)
     if (w !== writer || closing || !port) return;
+    if (!USE_WEBUSB && !port.writable) { portLost(); return; } // device gone
     try { w.releaseLock(); } catch (e) {}
     try { writer = port.writable ? port.writable.getWriter() : null; } catch (e) { writer = null; }
   });
@@ -2457,6 +2471,14 @@ function markFields() {
   $('btnRfdCopy').disabled = !port || !rfd.local || !rfd.remote || rfdBusy;
 }
 function updateRfdButtons() { markFields(); }
+// No device: empty both radio columns, as after a page refresh
+function clearRfd() {
+  if (atJobPending) atJobPending({ atError: 'the device was disconnected' }); // end a running radio command now
+  rfd.local = rfd.remote = null;
+  $('verLocal').textContent = $('verRemote').textContent = '–';
+  buildForm('local'); buildForm('remote');
+  rfdStatus('Press Load settings to read both radios.');
+}
 function rfdStatus(text, cls = 'quiet') { $('rfdStatus').className = cls; $('rfdStatus').textContent = text; }
 
 function parseParams(text) {
