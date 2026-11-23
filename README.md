@@ -8,7 +8,111 @@ https://narl3yyy-svg.github.io/gcs-settings/ (Chrome or Edge on a PC, Chrome on 
 - `index.html`: the full ground station (Status, Air, ELRS, Ground station with map, RFD900, About).
 - `indexRFD.html`: only the RFD900 tools: Load/Save settings for both radios, RFD900
   temperatures, AT console and command reference. No third-party code, works offline. Live at
-  https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html once uploaded.
+  https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html.
+
+## Dependencies
+
+Each page is a single self-contained HTML file. Nothing is installed or built, no server is
+needed, and no scripts, styles or fonts are loaded from the internet.
+
+### Browser
+
+Chrome or Edge on a PC, or Chrome on Android (USB to the ESP32 only). Firefox and Safari lack
+Web Serial and folder access, so the pages do not work there.
+
+| Browser feature | Used for | `index.html` | `indexRFD.html` |
+|---|---|---|---|
+| Web Serial (`navigator.serial`) | USB connection on a PC (ESP32 or plain RFD900) | ✓ | ✓ |
+| WebUSB (`navigator.usb`) | USB connection to the ESP32 on Android | ✓ | ✓ |
+| File System Access (`showDirectoryPicker`, `showOpenFilePicker`, `showSaveFilePicker`) | Offline maps folder, `.pmtiles` files, saving the page | ✓ | |
+| IndexedDB | Remembering which maps folder / map file was used (not the map data) | ✓ | |
+| localStorage | Remembering the chosen map layer | ✓ | |
+| Streams, TextEncoder, Blob, `fetch` | Serial data, saving tiles and files | ✓ | ✓ |
+
+### Libraries built into `index.html` (map only)
+
+The RFD900, Air, ELRS and Ground station code is written directly in the page (including the
+MAVLink parser and the MD5 used for the ELRS binding ID). Only the map uses outside libraries,
+and they are embedded in the file:
+
+| Library | Version | License | Used for |
+|---|---|---|---|
+| [Leaflet](https://leafletjs.com) | 1.9.4 | BSD-2-Clause | Map, markers, trail, mission waypoints |
+| [PMTiles](https://github.com/protomaps/PMTiles) | 4.5.0 | BSD-3-Clause | Reading offline `.pmtiles` street map files |
+| [protomaps-leaflet](https://github.com/protomaps/protomaps-leaflet) | 5.1.0 | BSD-3-Clause | Drawing `.pmtiles` street maps |
+
+Included inside protomaps-leaflet and PMTiles:
+
+| Library | Version | License |
+|---|---|---|
+| @protomaps/basemaps | 5.7.2 | BSD-3-Clause |
+| PMTiles (older copy) | 3.2.1 | BSD-3-Clause |
+| @mapbox/vector-tile | 2.0.5 | BSD-3-Clause |
+| pbf | 4.0.2 | BSD-3-Clause |
+| @mapbox/point-geometry | 1.1.0 | ISC |
+| potpack | 1.0.2 | ISC |
+| quickselect | 2.0.0 | ISC |
+| rbush | 3.0.1 | MIT |
+| fflate | 0.8.3 | MIT |
+| color2k | 2.0.4 | MIT |
+| protocol-buffers-schema | 3.6.1 | MIT |
+| resolve-protobuf-schema | 2.1.0 | MIT |
+
+`indexRFD.html` contains no third-party code.
+
+### Online services (optional)
+
+| Service | Contacted when | Without internet |
+|---|---|---|
+| USGS The National Map (`basemap.nationalmap.gov`) | Online Satellite / Topographic map, and "Download area" | Use saved areas or a `.pmtiles` file |
+| GitHub Pages | Opening the live site | Open a saved copy of the page |
+| ardupilot.org | Only when a parameter name is clicked, to open its documentation | Not needed |
+
+Neither page sends analytics or tracking data.
+
+### Hardware and firmware
+
+| Item | Needed for |
+|---|---|
+| RFD900 radios with SiK firmware | Radio settings, temperatures, AT console (standard `AT`/`RT` commands) |
+| ESP32 ground station firmware | ELRS, bind, GPS, ground-station status and RC. Not needed for a plain RFD900. |
+| FTDI or CP210x USB driver (Windows) | A plain RFD900 on a USB-serial cable |
+| ArduPilot autopilot | Air, Mission and parameter features, and the armed check (MAVLink) |
+
+## Licensing
+
+### Third-party software
+
+All embedded libraries are under permissive licenses (BSD-2-Clause, BSD-3-Clause, MIT, ISC)
+that allow commercial use, modification and closed-source distribution, provided their copyright
+notices and license texts are kept with the software. `index.html` includes them in its
+**About** tab (component list, copyright lines and full license texts), which must stay in any
+copy that is sold or distributed. The BSD-3-Clause licenses also forbid using their authors'
+names to endorse or promote this product.
+
+### Map data
+
+- **USGS The National Map** (online and saved maps): public domain; free to use, including
+  commercially and offline. USGS asks for a credit line: *"Map services and data available from
+  U.S. Geological Survey, National Geospatial Program."* Imagery is credited "USDA, USGS The
+  National Map". Coverage is the United States only.
+- **OpenStreetMap** (`.pmtiles` street map files supplied by the user): © OpenStreetMap
+  contributors, under the Open Database License (ODbL). Commercial use is allowed with this
+  credit, which the map shows.
+- **Esri:** no longer used. Areas saved with earlier versions of the page came from Esri, whose
+  terms do not allow keeping their tiles offline or using them commercially without a paid
+  license; delete those folders before selling or sharing the product.
+
+### Trademarks
+
+RFD900 is a trademark of RFDesign, ESP32 of Espressif Systems; ExpressLRS, ArduPilot and MAVLink
+are names of their respective projects. They are used only to describe compatibility. This
+product is not affiliated with or endorsed by them.
+
+### This project's own code
+
+This repository does not include a license file for its own code. Add one (or an end-user
+license agreement) to state how others may use it.
 
 ## Changes
 

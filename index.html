@@ -2255,7 +2255,11 @@ let map = null, gMarker = null, aMarker = null, hMarker = null, lineLayer = null
 function initMap() {
   if (map) return;
   if (typeof L === 'undefined') { $('mapNote').textContent = 'The map library could not load (no internet?). Positions still show above.'; return; }
-  map = L.map('map', { zoomControl: true }).setView([20, 0], 2);
+  // Start where the map was last left, else over the United States (USGS maps cover only the US)
+  let view = null;
+  try { view = JSON.parse(localStorage.getItem('gcsMapView')); } catch (e) {}
+  map = L.map('map', { zoomControl: true }).setView(view && view.c ? view.c : [39.5, -98.35], view && view.z ? view.z : 4);
+  map.on('moveend', () => { try { localStorage.setItem('gcsMapView', JSON.stringify({ c: [map.getCenter().lat, map.getCenter().lng], z: map.getZoom() })); } catch (e) {} });
   // USGS National Map: public domain, United States only. Its tile cache stops at zoom 16, so
   // closer zooms enlarge the zoom-16 tiles instead of asking the server for tiles it doesn't have.
   const layers = {
@@ -2266,6 +2270,23 @@ function initMap() {
   try { chosen = localStorage.getItem('gcsMapLayer') || chosen; } catch (e) {}
   (layers[chosen] || layers.Satellite).addTo(map);
   onlineLayers = layers;
+  // Say why the map is empty instead of leaving a blank square
+  let tileOk = 0, tileBad = 0;
+  for (const l of Object.values(layers)) {
+    l.on('tileload', () => { tileOk++; mapHint(); });
+    l.on('tileerror', () => { tileBad++; mapHint(); });
+  }
+  const mapNoteText = $('mapNote').textContent;
+  function mapHint() {
+    const online = Object.values(layers).some(l => map.hasLayer(l));
+    const c = map.getCenter();
+    const inUS = (c.lat > 17 && c.lat < 72 && c.lng > -180 && c.lng < -64) || (c.lat > 12 && c.lat < 22 && c.lng > 144 && c.lng < 147); // states, territories
+    let msg = mapNoteText, cls = 'note';
+    if (online && tileBad >= 4 && !tileOk) { msg = 'The USGS map server is not answering (no internet, or the server is down). Saved areas and .pmtiles street maps below still work.'; cls = 'note bad'; }
+    else if (online && !inUS) { msg = 'USGS maps cover the United States only. Move the map over the US, or open a .pmtiles street map below.'; cls = 'note warn'; }
+    $('mapNote').textContent = msg; $('mapNote').className = cls;
+  }
+  map.on('moveend baselayerchange', mapHint);
   layersControl = L.control.layers(layers, null, { position: 'topright' }).addTo(map);
   map.on('moveend zoomend', omEstimate);
   map.on('baselayerchange', e => { try { localStorage.setItem('gcsMapLayer', e.name); } catch (err) {} });
