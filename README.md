@@ -111,8 +111,12 @@ product is not affiliated with or endorsed by them.
 
 ### This project's own code
 
-This repository does not include a license file for its own code. Add one (or an end-user
-license agreement) to state how others may use it.
+The code written for this project (`index.html` and `indexRFD.html`, apart from the embedded
+third-party libraries above) is released under the **MIT License**, copyright (c) 2026
+narl3yyy-svg. See [`LICENSE`](LICENSE).
+
+In short: anyone may use, copy, change, share and sell it, as long as the copyright notice and
+license text stay with it (credit to narl3yyy-svg). It comes with no warranty.
 
 ## Changes
 
