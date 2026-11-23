@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RFD900 Settings</title>
+<!-- RFD900 radio settings: a stand-alone page with only the RFD900 tools. No third-party code; works offline. -->
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1b1f24; --quiet: #5c6570; --line: #dde1e6;
+    --accent: #2563eb; --good: #15803d; --warn: #b45309; --bad: #b91c1c; --code: #f0f2f5;
+    --sky: #3b82f6; --ground: #a16207; --shade: rgba(15, 20, 25, .45);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --panel: #1a1e24; --ink: #e6e9ed; --quiet: #9aa4af; --line: #2c323a;
+      --accent: #60a5fa; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; --code: #22272e;
+      --sky: #1d4ed8; --ground: #78350f; --shade: rgba(0, 0, 0, .6);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+           padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  h1 { font-size: 17px; margin: 0; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  nav { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 14px; }
+  nav button { background: none; border: 1px solid var(--line); color: var(--ink); }
+  nav button.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  nav .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 6px; background: var(--line); vertical-align: middle; }
+  nav .dot.live { background: var(--good); }
+  nav .dot.armed { background: var(--bad); }
+  section.tab { display: none; }
+  section.tab.on { display: block; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 14px; }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .mt { margin-top: 14px; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; }
+  dt { color: var(--quiet); }
+  dd { margin: 0; font-variant-numeric: tabular-nums; }
+  button { font: inherit; padding: 7px 12px; border-radius: 7px; border: 1px solid var(--accent);
+           background: var(--accent); color: #fff; cursor: pointer; }
+  button.ghost { background: none; color: var(--accent); }
+  button.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+  button.ghost.danger { background: none; color: var(--bad); }
+  button.small { padding: 3px 8px; font-size: 12.5px; }
+  button:disabled { opacity: .45; cursor: default; }
+  input, select { font: inherit; padding: 6px 8px; border-radius: 7px; border: 1px solid var(--line);
+                  background: var(--bg); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 12px; font-weight: 600;
+          border: 1px solid currentColor; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); } .quiet { color: var(--quiet); }
+  .note { color: var(--quiet); font-size: 13px; margin: 6px 0 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--quiet); font-weight: 600; font-size: 13px; }
+  code { font: 12.5px ui-monospace, Consolas, monospace; background: var(--code); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code); border-radius: 8px; padding: 10px; height: 240px; overflow: auto;
+        margin: 8px 0 0; font: 12.5px/1.4 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
+  .scroll { overflow-x: auto; }
+  #banner { display: none; margin-bottom: 14px; }
+  #banner.on { display: block; }
+  #map { height: 460px; border-radius: 10px; border: 1px solid var(--line); }
+  .big { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .stat { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .stat .label { color: var(--quiet); font-size: 12px; }
+  .bar { height: 8px; background: var(--code); border-radius: 4px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); }
+  .chan { display: grid; grid-template-columns: 34px 1fr 46px; gap: 8px; align-items: center; font-size: 12.5px; margin: 3px 0; }
+  .msgs { height: 170px; }
+  details summary { cursor: pointer; font-weight: 600; margin: 2px 0; }
+  .leaflet-container { font: inherit; }
+  /* RFD two-column form */
+  .rfdcol h2 { display: flex; align-items: center; gap: 8px; }
+  .rfdform { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; align-items: center; }
+  .rfdform label { color: var(--quiet); font-size: 13px; }
+  .rfdform select, .rfdform input[type=number], .rfdform input[type=text] { width: 100%; max-width: 220px; }
+  .rfdform .changed { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+  .rfdform .mismatch { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
+  .must { color: var(--accent); font-size: 11px; margin-left: 4px; }
+  .ver { font-size: 12.5px; color: var(--quiet); min-height: 1.2em; }
+  #rfdStatus { margin-top: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; min-height: 36px; }
+  /* commands */
+  .cmdgrid { display: flex; flex-wrap: wrap; gap: 8px; }
+  #ackLog { height: 110px; }
+  #pTable td input { width: 140px; }
+  #pTable tr.changed td:first-child { color: var(--warn); font-weight: 600; }
+  #mTable td input, #mTable td select { width: 100%; min-width: 70px; }
+  #mTable td.num input { max-width: 110px; }
+  .wp-icon { background: var(--accent); color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px;
+             display: flex; align-items: center; justify-content: center; font: 600 12px system-ui, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+  .wp-icon.cur { background: var(--good); }
+  /* modal */
+  #modal { position: fixed; inset: 0; background: var(--shade); display: none; align-items: center; justify-content: center; z-index: 5000; padding: 16px; }
+  #modal.on { display: flex; }
+  #modalBox { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; max-width: 460px; width: 100%; padding: 18px; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+  #modalBox h2 { margin-bottom: 8px; }
+  #modalBody { color: var(--ink); }
+  #modalBody p { margin: 6px 0; }
+  #modalBtns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>RFD900 radio settings</h1>
+  <div class="row" style="margin:0">
+    <span id="acState" class="pill quiet" title="Aircraft state from its MAVLink heartbeat">Aircraft: –</span>
+    <span id="connState" class="pill quiet">Not connected</span>
+    <select id="directBaud" title="Baud rate used when the port is a plain RFD900 (no ESP32). The ESP32 always uses 115200." style="width:auto">
+      <option value="57600" selected>RFD 57600</option><option value="115200">RFD 115200</option>
+      <option value="38400">RFD 38400</option><option value="19200">RFD 19200</option><option value="9600">RFD 9600</option>
+      <option value="230400">RFD 230400</option>
+    </select>
+    <button id="btnConnect">Connect</button>
+    <button id="btnDisconnect" class="ghost" disabled>Disconnect</button>
+  </div>
+</header>
+
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div id="modalBox">
+    <h2 id="modalTitle"></h2>
+    <div id="modalBody"></div>
+    <div id="modalBtns"><button id="modalCancel" class="ghost">Cancel</button><button id="modalOk">Confirm</button></div>
+  </div>
+</div>
+
+<main>
+  <div id="banner" class="card warn"></div>
+
+  <section id="tab-rfd">
+    <div class="card">
+      <h2>Temperatures</h2>
+      <dl>
+        <dt>Ground RFD900</dt><dd id="tRfdG">–</dd>
+        <dt>Aircraft RFD900</dt><dd id="tRfdA">–</dd>
+      </dl>
+      <div class="row"><button id="btnTemps" class="ghost small" disabled>Read RFD900 temperatures</button><span id="tempsNote" class="note" style="margin:0"></span></div>
+      <p class="note">Reads both radios once (about 5 s in command mode; RC and telemetry pause). Blocked while the aircraft is armed.</p>
+    </div>
+
+    <div class="mt"></div>
+    <div class="card">
+      <div class="row" style="margin-top:0">
+        <button id="btnRfdLoad" disabled>Load settings</button>
+        <button id="btnRfdSave" disabled>Save settings</button>
+        <button id="btnRfdCopy" class="ghost" disabled>Copy required to aircraft</button>
+        <span style="flex:1"></span>
+        <span class="note" style="margin:0"><span class="must">⇄</span> must match on both radios</span>
+      </div>
+      <p class="note" style="margin-top:0">Loading or saving puts the radios in command mode: RC and telemetry pause for 5–12 s, so it is blocked while the aircraft is armed. Saving changes the aircraft radio first, then the ground radio.</p>
+      <div class="two mt">
+        <div class="rfdcol" id="colLocal">
+          <h2>Ground radio <span class="quiet" style="font-weight:400">(local)</span></h2>
+          <div class="ver" id="verLocal">–</div>
+          <div class="rfdform" id="formLocal"></div>
+          <details class="mt"><summary>Advanced</summary><div class="rfdform mt" id="advLocal"></div></details>
+          <div class="row mt">
+            <button class="ghost small danger" id="defLocal" disabled>Reset to defaults</button>
+          </div>
+        </div>
+        <div class="rfdcol" id="colRemote">
+          <h2>Aircraft radio <span class="quiet" style="font-weight:400">(remote)</span></h2>
+          <div class="ver" id="verRemote">–</div>
+          <div class="rfdform" id="formRemote"></div>
+          <details class="mt"><summary>Advanced</summary><div class="rfdform mt" id="advRemote"></div></details>
+          <div class="row mt">
+            <button class="ghost small danger" id="defRemote" disabled>Reset to defaults</button>
+          </div>
+        </div>
+      </div>
+      <div id="rfdStatus" class="quiet">Press Load settings to read both radios.</div>
+    </div>
+
+    <div class="card mt">
+      <details>
+        <summary>AT console</summary>
+        <div class="row">
+          <input id="atCmd" placeholder="AT command, e.g. ATI5" style="flex:1;min-width:160px">
+          <button id="btnAt" disabled>Send</button>
+        </div>
+        <pre id="atLog"></pre>
+        <p class="note">Each command runs in its own short session: the ground station enters command mode, runs it, shows the reply and returns to normal operation.</p>
+      </details>
+    </div>
+
+    <div class="card mt">
+      <details>
+        <summary>Command reference</summary>
+        <p class="note">From RFDesign's SiK 3.x manual. Every <code>AT</code> command has an <code>RT</code> twin that runs on the linked aircraft radio. <b>Run</b> sends a read-only command (after a confirm); <b>Insert</b> puts a setting command in the console for you to edit.</p>
+        <div class="scroll"><table id="cmdTable"><thead><tr><th>Command</th><th>What it does</th><th></th></tr></thead><tbody></tbody></table></div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<script>
+'use strict';'use strict';
+const $ = id => document.getElementById(id);
+let port = null, reader = null, writer = null, rxText = '', pollTimer = null, wantConnected = false;
+const state = { status: null, rfdTempG: null, rfdTempA: null };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ==================================================================== modal
+let modalResolve = null;
+function ask({ title, body, ok = 'Confirm', danger = false, info = false }) {
+  $('modalTitle').textContent = title;
+  $('modalBody').innerHTML = body;
+  $('modalOk').textContent = info ? 'OK' : ok;
+  $('modalOk').className = danger ? 'danger' : '';
+  $('modalCancel').style.display = info ? 'none' : '';
+  $('modal').classList.add('on');
+  $('modalOk').focus();
+  return new Promise(r => { modalResolve = r; });
+}
+function closeModal(v) { $('modal').classList.remove('on'); if (modalResolve) { modalResolve(v); modalResolve = null; } }
+$('modalOk').onclick = () => closeModal(true);
+$('modalCancel').onclick = () => closeModal(false);
+$('modal').onclick = e => { if (e.target === $('modal')) closeModal(false); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('modal').classList.contains('on')) closeModal(false); });
+
+// Aircraft state as far as this page knows it
+function aircraftArmed() { return ac.armed && Date.now() - ac.lastSeen < 5000; }
+function aircraftStateLine() {
+  if (!ac.lastSeen) return '<p class="quiet">Aircraft state unknown (no telemetry seen).</p>';
+  if (Date.now() - ac.lastSeen > 5000) return '<p class="quiet">Aircraft state unknown (telemetry lost).</p>';
+  return `<p>Aircraft is <b class="${ac.armed ? 'bad' : 'good'}">${ac.armed ? 'ARMED' : 'disarmed'}</b> in <b>${ac.modeName || '–'}</b>.</p>`;
+}
+// For actions that stop RC to the aircraft: blocked while armed, confirmed otherwise
+async function rcPauseGuard(title, what) {
+  if (aircraftArmed()) {
+    await ask({ title: 'Not while armed', info: true,
+      body: `<p><b>${title}</b> ${what}</p><p class="bad">The aircraft is armed. Disarm and land first.</p>` });
+    return false;
+  }
+  return ask({ title, ok: 'Continue', body: `<p>${what}</p>${aircraftStateLine()}` });
+}
+
+function banner(msg) { $('banner').textContent = msg || ''; $('banner').classList.toggle('on', !!msg); }
+
+// Chrome on Android has Web Serial for Bluetooth only, so USB there goes through WebUSB
+const USE_WEBUSB = 'usb' in navigator && (!('serial' in navigator) || /Android/i.test(navigator.userAgent));
+if (!('serial' in navigator) && !('usb' in navigator)) {
+  banner('This browser cannot reach USB devices. Use Chrome or Edge on a PC, or Chrome on Android.');
+  $('btnConnect').disabled = true;
+}
+
+// ==================================================================== serial
+const portButtons = ['btnRfdLoad', 'btnAt', 'btnTemps', 'defLocal', 'defRemote'];
+function setConnected(on) {
+  $('connState').textContent = on ? 'Connected' : 'Not connected';
+  $('connState').className = 'pill ' + (on ? 'good' : 'quiet');
+  $('btnConnect').disabled = on;
+  $('btnDisconnect').disabled = !on;
+  portButtons.forEach(id => $(id).disabled = !on);
+  document.querySelectorAll('#cmdTable button').forEach(b => b.disabled = !on);
+  updateRfdButtons();
+}
+
+function startPoll() { clearInterval(pollTimer); pollTimer = setInterval(tick, 1000); }
+function stopPoll() { clearInterval(pollTimer); }
+function tick() {
+  renderAircraft();
+  if (atActive || rfdBusy) return; // in SiK command mode these bytes would go to the radio
+  send('#GCS status'); // keeps the ESP32 ground station talking to this page (dropped in direct mode)
+}
+
+// WebUSB transport, for browsers without Web Serial (Chrome on Android). The ESP32-S3's USB
+// serial is a standard CDC-ACM interface: this drives its bulk endpoints directly and offers the
+// same shape as a Web Serial port (open, readable, writable, setSignals, close).
+class UsbSerialPort {
+  constructor(device) {
+    this.device = device;
+    this.readable = this.writable = null;
+    this.signals = { dataTerminalReady: false, requestToSend: false };
+  }
+  async open() {
+    const d = this.device;
+    await d.open();
+    if (!d.configuration) await d.selectConfiguration(1);
+    const find = cls => d.configuration.interfaces.find(i => i.alternates[0].interfaceClass === cls);
+    const ctrl = find(0x02), data = find(0x0a); // CDC communications, CDC data
+    if (!data) { await d.close(); throw new Error('this device has no serial interface'); }
+    this.ctrlIf = ctrl ? ctrl.interfaceNumber : data.interfaceNumber;
+    this.claimed = [...new Set([this.ctrlIf, data.interfaceNumber])];
+    for (const n of this.claimed) await d.claimInterface(n);
+    const ep = dir => data.alternates[0].endpoints.find(e => e.direction === dir && e.type === 'bulk');
+    const epIn = ep('in'), epOut = ep('out');
+    this.readable = new ReadableStream({
+      pull: async c => {
+        // Keep asking until bytes arrive: a pull that enqueues nothing would not be called again
+        for (;;) {
+          let r;
+          try { r = await d.transferIn(epIn.endpointNumber, 16384); } catch (e) { try { c.error(e); } catch (x) {} return; }
+          if (r.data && r.data.byteLength) { c.enqueue(new Uint8Array(r.data.buffer, r.data.byteOffset, r.data.byteLength)); return; }
+        }
+      }
+    });
+    this.writable = new WritableStream({ write: chunk => d.transferOut(epOut.endpointNumber, chunk) });
+  }
+  async setSignals(sig) {
+    Object.assign(this.signals, sig);
+    const value = (this.signals.dataTerminalReady ? 1 : 0) | (this.signals.requestToSend ? 2 : 0);
+    await this.device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value, index: this.ctrlIf }); // SET_CONTROL_LINE_STATE
+  }
+  async close() {
+    const d = this.device;
+    if (!d.opened) return; // unplugged
+    for (const n of this.claimed || []) { try { await d.releaseInterface(n); } catch (e) {} }
+    await d.close();
+  }
+}
+
+// Web Serial on a PC, WebUSB on Android or where Web Serial is missing
+async function choosePort() {
+  // No filter on a PC: list every COM port (ESP32 boards and plain USB-serial adapters such as an RFD900's FTDI cable)
+  if (!USE_WEBUSB) return navigator.serial.requestPort();
+  return new UsbSerialPort(await navigator.usb.requestDevice({ filters: [{ vendorId: 0x303a }] }));
+}
+
+// Direct mode: the port is a plain USB-serial adapter on an RFD900 (no ESP32 in between).
+// The page then does the ESP32's job for radio commands itself: guard time, +++, AT/RT commands, ATO.
+let direct = false;
+function isEspPort(p) {
+  if (USE_WEBUSB) return true; // WebUSB only ever offers the ESP32
+  try { return p.getInfo().usbVendorId === 0x303a; } catch (e) { return true; }
+}
+
+async function openPort(p) {
+  direct = !isEspPort(p);
+  const baudRate = direct ? Number($('directBaud').value) || 57600 : 115200;
+  await p.open({ baudRate, bufferSize: 1 << 20 }); // room for telemetry while the tab is busy
+  // Drop RTS before DTR: RTS high with DTR low resets the ESP32's USB serial
+  if (!direct) try { await p.setSignals({ requestToSend: false }); await p.setSignals({ dataTerminalReady: false }); } catch (e) {}
+  port = p;
+  writer = port.writable.getWriter();
+  setConnected(true);
+  banner(direct ? `Direct RFD900 mode at ${baudRate} baud: the page talks to the radio directly.` : '');
+  readLoop();
+  send('#GCS hello');
+  startPoll();
+}
+
+// ESP32 commands in direct mode: run "#GCS at" sessions here, drop the rest
+let directCap = null, directQueue = Promise.resolve();
+function directCommand(text) {
+  if (text.startsWith('#GCS at ')) {
+    const cmds = text.slice(8).split(';').filter(Boolean);
+    directQueue = directQueue.then(() => directAt(cmds)).then(onReply, e => onReply({ atError: e.message }));
+    return;
+  }
+  if (/^#GCS (status|hello|gpsecho)/.test(text)) return; // background traffic, nothing to say
+  banner('That needs the ESP32 ground station; this port is a plain RFD900.');
+}
+
+// Wait for the captured text to satisfy done(), or for it to go quiet after something arrived
+async function directWait(done, maxMs, quietMs) {
+  const t0 = Date.now();
+  let lastLen = 0, lastChange = Date.now();
+  while (Date.now() - t0 < maxMs) {
+    await sleep(50);
+    if (!port) throw new Error('not connected');
+    if (directCap.length !== lastLen) { lastLen = directCap.length; lastChange = Date.now(); }
+    if (done && done(directCap)) return;
+    if (quietMs && lastLen && Date.now() - lastChange >= quietMs) return;
+  }
+}
+const directText = s => s.replace(/[^\x20-\x7e\r\n]/g, '').split(/\r\n|\r|\n/).map(l => l.trim()).filter(Boolean);
+const endsOk = s => /(^|[\r\n])(OK|ERROR)\s*$/.test(s.replace(/[^\x20-\x7e\r\n]/g, ''));
+
+async function directAt(cmds) {
+  atActive = true; atLine = '';
+  try {
+    // Enter command mode: 1 s of silence, +++, 1 s of silence, then "OK"
+    let inCmd = false;
+    for (let attempt = 0; attempt < 2 && !inCmd; attempt++) {
+      await sleep(1200);
+      directCap = '';
+      sendBytes(new TextEncoder().encode('+++'));
+      await directWait(s => /OK/.test(s), 2500, 0);
+      inCmd = /OK/.test(directCap);
+      if (!inCmd) { directCap = ''; send('AT'); await directWait(endsOk, 800, 0); inCmd = endsOk(directCap); } // already in command mode
+    }
+    if (!inCmd) throw new Error(`the radio did not enter command mode (is it set to ${port ? $('directBaud').value : '?'} baud, and is no other program using the port?)`);
+    const at = [];
+    let rebooted = false;
+    for (const cmd of cmds) {
+      directCap = '';
+      send(cmd);
+      const remote = /^RT/i.test(cmd);
+      // ATI5 and friends end without OK: stop when the radio goes quiet. Remote replies come over the air.
+      await directWait(endsOk, remote ? 6000 : 2500, remote ? 1200 : 400);
+      const lines = directText(directCap);
+      if (lines.length && lines[0].toUpperCase() === cmd.toUpperCase()) lines.shift(); // command echo
+      at.push({ cmd, reply: lines.join('\n') });
+      if (/^(AT|RT)Z$/i.test(cmd) && /^AT/i.test(cmd)) rebooted = true;
+    }
+    if (!rebooted) { directCap = ''; send('ATO'); await directWait(endsOk, 1000, 300); }
+    return { at };
+  } finally {
+    directCap = null;
+    atActive = false;
+  }
+}
+
+$('btnConnect').onclick = async () => {
+  try {
+    const p = await choosePort();
+    wantConnected = true;
+    await openPort(p);
+  } catch (e) {
+    if (e.name === 'NotFoundError') return; // nothing picked
+    banner(!USE_WEBUSB
+      ? 'Could not open the port: ' + e.message + '. Is Mission Planner or a terminal using it?'
+      : 'Could not open the board: ' + e.message + '. Close other USB serial apps and plug it in again.');
+  }
+};
+
+$('btnDisconnect').onclick = () => { wantConnected = false; closePort(); };
+
+let closing = false, readDone = null;
+async function closePort() {
+  if (closing) return;
+  closing = true;
+  stopPoll();
+  // Don't wait forever on a stalled writer: that would leave closing stuck and block reconnects
+  try { if (writer) { await Promise.race([writer.ready, sleep(500)]); writer.releaseLock(); } } catch (e) {}
+  try { if (reader) await reader.cancel(); } catch (e) {}
+  try { if (readDone) await Promise.race([readDone, sleep(1500)]); } catch (e) {} // the read loop must let go before close()
+  // An unplugged port can leave close() waiting forever: don't let that keep the page showing "Connected"
+  try { if (port) await Promise.race([port.close(), sleep(1500)]); } catch (e) { if (!lost) banner('Could not close the port: ' + e.message); }
+  port = reader = writer = readDone = null;
+  closing = false;
+  setConnected(false);
+  clearRfd();
+}
+// The device went away (cable pulled, board reset): close down and say so
+let lost = false;
+async function portLost() {
+  if (!port || closing) return;
+  lost = true;
+  await closePort();
+  lost = false;
+  banner(wantConnected ? 'Device disconnected. Plug it back in to reconnect, or press Connect.' : 'Device disconnected.');
+}
+
+// The board re-enumerates after a reboot: reconnect to the same port automatically
+!USE_WEBUSB && navigator.serial && navigator.serial.addEventListener('connect', async ev => {
+  if (wantConnected && !port) {
+    await sleep(1500);
+    try { await openPort(ev.target); } catch (e) { banner('Reconnect failed: ' + e.message); }
+  }
+});
+!USE_WEBUSB && navigator.serial && navigator.serial.addEventListener('disconnect', ev => {
+  if (port && (!ev.target || ev.target === port || ev.target === navigator.serial)) portLost();
+});
+if (USE_WEBUSB) {
+  navigator.usb.addEventListener('connect', async ev => {
+    if (wantConnected && !port && ev.device.vendorId === 0x303a) {
+      await sleep(1500);
+      try { await openPort(new UsbSerialPort(ev.device)); } catch (e) { banner('Reconnect failed: ' + e.message); }
+    }
+  });
+  navigator.usb.addEventListener('disconnect', ev => {
+    if (port && port.device === ev.device) portLost();
+  });
+}
+
+function readLoop() { readDone = readLoopBody(); }
+async function readLoopBody() {
+  while (port && port.readable && !closing) {
+    reader = port.readable.getReader();
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        mavFeed(value);
+        // Byte-for-byte to text: the stream mixes MAVLink binary with text lines
+        let s = '';
+        for (const b of value) s += String.fromCharCode(b);
+        if (directCap !== null) directCap += s;
+        onText(s);
+      }
+    } catch (e) {
+      // Web Serial: a non-fatal error (buffer overrun after the tab was busy or in the background,
+      // framing error) ends this stream and port.readable hands out a new one, so keep reading.
+      // Breaking out here used to stop all replies until the board was unplugged and replugged.
+      if (closing || !port || USE_WEBUSB) break;
+      await sleep(50);
+    } finally {
+      try { reader.releaseLock(); } catch (e) {}
+    }
+  }
+  // port.readable is null once the device is gone: treat it as unplugged (after this function has
+  // returned, because closePort waits for it)
+  if (port && !closing) setTimeout(portLost, 0);
+}
+
+function sendBytes(bytes) {
+  const w = writer;
+  if (!w) return;
+  w.write(bytes).catch(() => {
+    // A failed write leaves this writer dead and every later command would vanish silently:
+    // take a fresh one from the port (Web Serial makes a new writable stream after an error)
+    if (w !== writer || closing || !port) return;
+    if (!USE_WEBUSB && !port.writable) { portLost(); return; } // device gone
+    try { w.releaseLock(); } catch (e) {}
+    try { writer = port.writable ? port.writable.getWriter() : null; } catch (e) { writer = null; }
+  });
+}
+function send(text) {
+  if (direct && text.startsWith('#GCS')) { directCommand(text); return; }
+  sendBytes(new TextEncoder().encode(text + (text === '+++' ? '' : '\r'))); }
+
+// ==================================================================== incoming text
+function onText(s) {
+  rxText += s;
+  // Settings replies: "#GCS {json}\n"
+  let i;
+  while ((i = rxText.indexOf('#GCS {')) >= 0) {
+    const end = rxText.indexOf('\n', i);
+    if (end < 0) break;
+    // A reply that lost its newline must not swallow the complete reply that follows it
+    const later = rxText.lastIndexOf('#GCS {', end);
+    if (later > i) { feedAt(rxText.slice(0, later)); rxText = rxText.slice(later); continue; }
+    const json = rxText.slice(i + 5, end);
+    feedAt(rxText.slice(0, i));
+    rxText = rxText.slice(end + 1);
+    const r = parseReply(json);
+    if (r) onReply(r);
+  }
+  // Hold back an unfinished "#GCS {...": settings replies (ATI5 + RTI5) run well past 1 KB and
+  // arrive in many USB packets, so the old 800-character limit threw long replies away
+  const start = rxText.lastIndexOf('#GCS {');
+  if (start >= 0 && rxText.length - start < 65536) {
+    feedAt(rxText.slice(0, start));
+    rxText = rxText.slice(start);
+    return;
+  }
+  // Otherwise hold back only an ending that could still grow into "#GCS {"
+  let keep = 0;
+  for (let n = Math.min(5, rxText.length); n > 0; n--) if (rxText.endsWith('#GCS {'.slice(0, n))) { keep = n; break; }
+  feedAt(rxText.slice(0, rxText.length - keep));
+  rxText = rxText.slice(rxText.length - keep);
+}
+// Telemetry bytes can get mixed into a reply line: if the line doesn't parse, try it with them removed
+function parseReply(json) {
+  try { return JSON.parse(json); } catch (e) {}
+  try { return JSON.parse(json.replace(/[^\x20-\x7e]/g, '')); } catch (e) {}
+  return null;
+}
+
+// SiK replies arrive mixed into binary aircraft telemetry. Radio command sessions are run by the
+// ground-station firmware via "#GCS at …" and return structured JSON (see runAtJob / radioSession).
+// The page no longer enters +++ command mode itself, so atActive stays false and feedAt is a no-op.
+// Kept as a defensive filter in case mixed text still appears on the stream.
+let atBuf = '', atActive = false, atLine = '';
+const AT_LINE = /^(OK|ERROR|AT\S*|RT\S*|RFD.*|SiK.*|[SR]\d+:\S+=.*|L\/R .*|\S+=\S+.*|\[\d+\].*|Board.*|Frequency.*|Version.*)$/;
+function feedAt(s) {
+  if (!s || !atActive) return; // outside command mode the stream is MAVLink, not text
+  const clean = s.replace(/[^\x20-\x7e\r\n]/g, '\x00');
+  atBuf += clean.replace(/\x00/g, '');
+  for (const ch of clean) {
+    if (ch === '\n' || ch === '\r') {
+      const line = atLine.trim();
+      if (line.length >= 2 && AT_LINE.test(line)) logAt(line);
+      atLine = '';
+    } else if (ch === '\x00') {
+      atLine = ''; // binary in between: a reply line starts after it
+    } else if (atLine.length < 200) {
+      atLine += ch;
+    }
+  }
+}
+function logAt(line) {
+  const log = $('atLog');
+  log.textContent = (log.textContent + line + '\n').slice(-20000);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ==================================================================== MAVLink
+const CRC_EXTRA = { 0: 50 }; // HEARTBEAT only: this page just needs to know if the aircraft is armed
+
+function crcAccumulate(b, crc) {
+  let t = (b ^ (crc & 0xff)) & 0xff;
+  t = (t ^ (t << 4)) & 0xff;
+  return ((crc >> 8) ^ (t << 8) ^ (t << 3) ^ (t >> 4)) & 0xffff;
+}
+function crcOf(buf, start, end, extra) {
+  let crc = 0xffff;
+  for (let i = start; i < end; i++) crc = crcAccumulate(buf[i], crc);
+  return crcAccumulate(extra, crc);
+}
+
+let mavBuf = new Uint8Array(0);
+function mavFeed(chunk) {
+  const b = new Uint8Array(mavBuf.length + chunk.length);
+  b.set(mavBuf); b.set(chunk, mavBuf.length);
+  let i = 0;
+  while (i < b.length) {
+    const stx = b[i];
+    if (stx !== 0xfd && stx !== 0xfe) { i++; continue; }
+    if (i + 2 > b.length) break;
+    const len = b[i + 1];
+    const v2 = stx === 0xfd;
+    const hdr = v2 ? 10 : 6;
+    const sigLen = v2 && (b[i + 2] & 1) ? 13 : 0;
+    const total = hdr + len + 2 + sigLen;
+    if (i + total > b.length) break;
+    const msgid = v2 ? (b[i + 7] | (b[i + 8] << 8) | (b[i + 9] << 16)) : b[i + 5];
+    const sys = v2 ? b[i + 5] : b[i + 3], comp = v2 ? b[i + 6] : b[i + 4];
+    const extra = CRC_EXTRA[msgid];
+    if (extra === undefined) {
+      // Can't check the CRC; count it for link quality only if the next frame starts right after it
+      if (i + total < b.length && (b[i + total] === 0xfd || b[i + total] === 0xfe)) i += total;
+      else if (i + total === b.length) break;
+      else i++;
+      continue;
+    }
+    const crc = crcOf(b, i + 1, i + hdr + len, extra);
+    const got = b[i + hdr + len] | (b[i + hdr + len + 1] << 8);
+    if (crc !== got) { i++; continue; }
+    const full = new Uint8Array(Math.max(9, len)); // MAVLink 2 trims trailing zero bytes
+    full.set(b.subarray(i + hdr, i + hdr + len));
+    onMav(msgid, sys, comp, new DataView(full.buffer));
+    i += total;
+  }
+  mavBuf = b.slice(i).slice(-600);
+}
+
+const COPTER = {0:'Stabilize',1:'Acro',2:'AltHold',3:'Auto',4:'Guided',5:'Loiter',6:'RTL',7:'Circle',9:'Land',11:'Drift',13:'Sport',14:'Flip',15:'AutoTune',16:'PosHold',17:'Brake',18:'Throw',19:'Avoid ADSB',20:'Guided NoGPS',21:'Smart RTL',22:'FlowHold',23:'Follow',24:'ZigZag',25:'SystemID',26:'Autorotate',27:'Auto RTL',28:'Turtle'};
+const PLANE = {0:'Manual',1:'Circle',2:'Stabilize',3:'Training',4:'Acro',5:'FBWA',6:'FBWB',7:'Cruise',8:'AutoTune',10:'Auto',11:'RTL',12:'Loiter',13:'Takeoff',14:'Avoid ADSB',15:'Guided',17:'QStabilize',18:'QHover',19:'QLoiter',20:'QLand',21:'QRTL',22:'QAutoTune',23:'QAcro',24:'Thermal',25:'Loiter to QLand'};
+const ROVER = {0:'Manual',1:'Acro',3:'Steering',4:'Hold',5:'Loiter',6:'Follow',7:'Simple',8:'Dock',9:'Circle',10:'Auto',11:'RTL',12:'Smart RTL',15:'Guided'};
+const TYPES = {1:['Fixed wing','plane'],2:['Quadcopter','copter'],3:['Coaxial','copter'],4:['Helicopter','copter'],10:['Rover','rover'],11:['Boat','rover'],13:['Hexacopter','copter'],14:['Octocopter','copter'],15:['Tricopter','copter'],19:['VTOL','plane'],20:['VTOL','plane'],21:['VTOL','plane'],22:['VTOL','plane'],23:['VTOL','plane'],24:['VTOL','plane'],25:['VTOL','plane'],29:['Dodecacopter','copter'],35:['Decacopter','copter']};
+const MODES = { copter: COPTER, plane: PLANE, rover: ROVER };
+
+const ac = { sys: null, lastSeen: 0, armed: false, kind: null, modeName: null };
+function onMav(id, sys, comp, d) {
+  if (id !== 0 || sys === 255) return; // HEARTBEAT from anything but a ground station
+  const type = d.getUint8(4), autopilot = d.getUint8(5);
+  if (type === 6 || autopilot === 8) return; // a GCS or a non-autopilot component
+  if (ac.sys === null) ac.sys = sys;
+  if (sys !== ac.sys || comp !== 1) return;
+  ac.lastSeen = Date.now();
+  const t = TYPES[type] || ['Vehicle ' + type, 'copter'];
+  ac.kind = t[1];
+  ac.modeName = MODES[ac.kind][d.getUint32(0, true)] || ('Mode ' + d.getUint32(0, true));
+  ac.armed = !!(d.getUint8(6) & 128);
+  renderAircraft();
+}
+function renderAircraft() {
+  const el = $('acState');
+  if (!ac.lastSeen || Date.now() - ac.lastSeen > 5000) { el.textContent = ac.lastSeen ? 'Aircraft: telemetry lost' : 'Aircraft: –'; el.className = 'pill quiet'; return; }
+  el.textContent = `Aircraft: ${ac.armed ? 'ARMED' : 'disarmed'} · ${ac.modeName}`;
+  el.className = 'pill ' + (ac.armed ? 'bad' : 'good');
+}
+
+// ==================================================================== replies from the ESP32 ground station
+function onReply(r) {
+  if (r.at !== undefined || r.atError !== undefined) { if (atJobPending) atJobPending(r); return; }
+  if (r.error && atJobPending) { atJobPending({ atError: r.error }); return; }
+  if (r.error) { banner('Board: ' + r.error); return; }
+  // status, GPS and other ground-station messages are for the full page
+}
+function renderTemps() {
+  const tr = t => !t ? '–' : typeof t.c === 'number' ? `${t.c} °C (read ${t.at})` : `${t.c} (${t.at})`;
+  $('tRfdG').textContent = tr(state.rfdTempG);
+  $('tRfdA').textContent = tr(state.rfdTempA);
+}
+
+// ==================================================================== RFD900
+const MUST_MATCH = new Set(['S2', 'S3', 'S5', 'S8', 'S9', 'S10', 'S12', 'S14', 'S15']);
+const opts = list => list.map(v => Array.isArray(v) ? v : [v, String(v)]);
+const RFD_FIELDS = [
+  { s: 'S0', label: 'Format', type: 'ro' },
+  { s: 'S1', label: 'Baud', type: 'select', opts: opts([[1, '1200'], [2, '2400'], [4, '4800'], [9, '9600'], [19, '19200'], [38, '38400'], [57, '57600'], [115, '115200'], [230, '230400'], [460, '460800'], [1000, '1000000']]) },
+  { s: 'S2', label: 'Air speed', type: 'select', opts: opts([12, 56, 64, 100, 125, 188, 200, 224, 500, 750].map(v => [v, v + ' kbps'])) },
+  { s: 'S3', label: 'Net ID', type: 'num', min: 0, max: 255 },
+  { s: 'S4', label: 'Tx power', type: 'select', opts: Array.from({ length: 31 }, (_, v) => [v, `${v} dBm (${Math.round(10 ** (v / 10))} mW)`]) },
+  { s: 'S5', label: 'ECC', type: 'check' },
+  { s: 'S6', label: 'MAVLink', type: 'select', opts: opts([[0, 'Raw data'], [1, 'MAVLink']]) },
+  { s: 'S7', label: 'Op resend', type: 'check' },
+  { s: 'S8', label: 'Min freq (kHz)', type: 'num' },
+  { s: 'S9', label: 'Max freq (kHz)', type: 'num' },
+  { s: 'S10', label: '# of channels', type: 'num', min: 1 },
+  { s: 'S11', label: 'Duty cycle (%)', type: 'num', min: 10, max: 100 },
+  { s: 'S12', label: 'LBT RSSI', type: 'num', min: 0, max: 220 },
+  { s: 'S13', label: 'RTS/CTS', type: 'check' },
+  { s: 'S14', label: 'Max window (ms)', type: 'num', min: 20, max: 400 },
+  { s: 'S15', label: 'AES encryption', type: 'select', opts: opts([[0, 'Off'], [1, 'AES-128'], [2, 'AES-256']]) }
+];
+const REG_HELP = {
+  S0: 'EEPROM format version, set by the firmware.', S1: 'Serial speed to the ESP. Keep 57 (57600) on the ground radio.',
+  S2: 'Air data rate.', S3: 'Network ID.', S4: 'Transmit power.', S5: 'Golay error correction.', S6: 'MAVLink framing and RADIO_STATUS reports.',
+  S7: 'Opportunistic resend.', S8: 'Lowest hopping frequency.', S9: 'Highest hopping frequency.', S10: 'Number of hopping channels.',
+  S11: 'Share of time allowed to transmit.', S12: 'Listen-before-talk threshold (0 = off).', S13: 'Hardware flow control (CTS is tied to GND on this board).',
+  S14: 'Maximum transmit window; limits latency.', S15: 'Encryption level; the key is set with AT&E.'
+};
+const rfd = { local: null, remote: null };
+let rfdBusy = false;
+
+function buildForm(side) {
+  const form = $(side === 'local' ? 'formLocal' : 'formRemote');
+  const adv = $(side === 'local' ? 'advLocal' : 'advRemote');
+  form.innerHTML = ''; adv.innerHTML = '';
+  const data = rfd[side];
+  const addRow = (target, f, p) => {
+    const lab = document.createElement('label');
+    lab.innerHTML = `${f.label}${MUST_MATCH.has(f.s) ? '<span class="must" title="Must match on both radios">⇄</span>' : ''}`;
+    lab.title = `${f.s}${p ? ' ' + p.name : ''}: ${REG_HELP[f.s] || 'See the RFD900 manual.'}`;
+    let el;
+    const v = p ? p.value : '';
+    if (f.type === 'select') {
+      el = document.createElement('select');
+      const list = f.opts.slice();
+      if (p && !list.some(o => String(o[0]) === v)) list.push([v, v + ' (current)']);
+      el.innerHTML = list.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('');
+      el.value = v;
+    } else if (f.type === 'check') {
+      el = document.createElement('input'); el.type = 'checkbox'; el.checked = v === '1';
+    } else {
+      el = document.createElement('input'); el.type = f.type === 'num' ? 'number' : 'text';
+      if (f.min !== undefined) el.min = f.min; if (f.max !== undefined) el.max = f.max;
+      el.value = v;
+      if (f.type === 'ro') el.readOnly = true;
+    }
+    el.disabled = !p;
+    el.dataset.s = f.s; el.dataset.side = side;
+    el.addEventListener('input', onFieldChange); el.addEventListener('change', onFieldChange);
+    lab.htmlFor = el.id = `${side}-${f.s}`;
+    target.appendChild(lab); target.appendChild(el);
+  };
+  for (const f of RFD_FIELDS) addRow(form, f, data && data.params[f.s]);
+  if (data) for (const [s, p] of Object.entries(data.params)) {
+    if (!RFD_FIELDS.some(f => f.s === s)) addRow(adv, { s, label: `${s} ${p.name}`, type: 'text' }, p);
+  }
+  if (!adv.children.length) adv.innerHTML = '<span class="note">Load settings to see the rest.</span>';
+  markFields();
+}
+function fieldValue(el) { return el.type === 'checkbox' ? (el.checked ? '1' : '0') : String(el.value).trim(); }
+function onFieldChange(e) {
+  const el = e.target, p = rfd[el.dataset.side] && rfd[el.dataset.side].params[el.dataset.s];
+  if (p) p.value = fieldValue(el);
+  markFields();
+}
+function markFields() {
+  let any = false;
+  for (const side of ['local', 'remote']) {
+    const d = rfd[side];
+    if (!d) continue;
+    for (const [s, p] of Object.entries(d.params)) {
+      const el = $(`${side}-${s}`);
+      if (!el) continue;
+      const changed = p.value !== p.orig;
+      any = any || changed;
+      const other = rfd[side === 'local' ? 'remote' : 'local'];
+      const mismatch = MUST_MATCH.has(s) && other && other.params[s] && other.params[s].value !== p.value;
+      el.classList.toggle('changed', changed);
+      el.classList.toggle('mismatch', !!mismatch);
+    }
+  }
+  $('btnRfdSave').disabled = !port || !any || rfdBusy;
+  $('btnRfdCopy').disabled = !port || !rfd.local || !rfd.remote || rfdBusy;
+}
+function updateRfdButtons() { markFields(); }
+// No device: empty both radio columns, as after a page refresh
+function clearRfd() {
+  if (atJobPending) atJobPending({ atError: 'the device was disconnected' }); // end a running radio command now
+  rfd.local = rfd.remote = null;
+  state.rfdTempG = state.rfdTempA = null; renderTemps(); $('tempsNote').textContent = '';
+  $('verLocal').textContent = $('verRemote').textContent = '–';
+  buildForm('local'); buildForm('remote');
+  rfdStatus('Press Load settings to read both radios.');
+}
+function rfdStatus(text, cls = 'quiet') { $('rfdStatus').className = cls; $('rfdStatus').textContent = text; }
+
+function parseParams(text) {
+  const params = {};
+  for (const m of text.matchAll(/([SR]\d+):([A-Za-z_0-9\/]+)=(-?[0-9A-Za-z.]+)/g)) params[m[1]] = { name: m[2], value: m[3], orig: m[3] };
+  return params;
+}
+
+// Radio command sessions run by the ground station itself ("#GCS at CMD1;CMD2"): it waits the
+// guard time, sends +++, runs each command, collects the replies and leaves command mode.
+let atJobPending = null;
+function runAtJob(cmds) {
+  return new Promise((resolve, reject) => {
+    if (!port) { reject(new Error('not connected')); return; }
+    const ms = 6000 + cmds.reduce((t, c) => t + (c.startsWith('RT') ? 9500 : 2000), 0);
+    const timer = setTimeout(() => { atJobPending = null; reject(new Error('no reply from the ground station')); }, ms);
+    atJobPending = r => { clearTimeout(timer); atJobPending = null; resolve(r); };
+    send('#GCS at ' + cmds.join(';'));
+  });
+}
+const replyOf = (r, cmd) => { const x = (r.at || []).find(e => e.cmd === cmd); return x ? x.reply : ''; };
+const replyOk = text => /(^|\n)OK($|\n)/.test(text) || /OK$/.test(text);
+
+// Runs a session with the page's own traffic paused; returns the reply, or null after showing the error
+// Read-only sessions are tried a second time on their own: a missed +++ or a lost reply is usually
+// fine on the next go. Sessions that write, reset or reboot a radio are never repeated.
+const readOnlyCmd = c => !/=|&W|&F|&UPDATE|&T|&R|&P|^(AT|RT)Z$|^(AT|RT)O$/i.test(c);
+async function radioSession(cmds, show) {
+  if (rfdBusy) { show('A radio command is already running.', 'warn'); return null; }
+  rfdBusy = true; markFields();
+  const tries = cmds.every(readOnlyCmd) ? 2 : 1;
+  try {
+    for (let attempt = 1; ; attempt++) {
+      let err;
+      try {
+        const r = await runAtJob(cmds);
+        if (!r.atError) return r;
+        err = r.atError.charAt(0).toUpperCase() + r.atError.slice(1) + '.';
+      } catch (e) {
+        err = 'Error: ' + e.message;
+      }
+      if (attempt >= tries || !port) { show(err, 'bad'); return null; }
+      show(`${err} Trying again…`, 'warn');
+      await sleep(1500); // let the radio settle back into data mode
+    }
+  } finally {
+    rfdBusy = false; markFields();
+  }
+}
+
+$('btnRfdLoad').onclick = async () => {
+  if (!await rcPauseGuard('Load radio settings', 'Both radios go into command mode for about 10 seconds. RC and telemetry to the aircraft pause, which may trigger its radio failsafe.')) return;
+  rfdStatus('Reading both radios…', 'warn');
+  const r = await radioSession(['ATI', 'ATI5', 'RTI', 'RTI5'], rfdStatus);
+  if (!r) return;
+  const lp = parseParams(replyOf(r, 'ATI5')), rp = parseParams(replyOf(r, 'RTI5'));
+  const version = text => (text.match(/RFD[^\n]*/) || [''])[0];
+  let remoteVersion = version(replyOf(r, 'RTI'));
+  // The aircraft radio's reply crosses the air link and can arrive cut short: ask again for what is missing
+  const missing = () => Object.keys(lp).filter(k => !rp[k]);
+  for (let attempt = 1; attempt <= 2 && Object.keys(rp).length && (missing().length || !remoteVersion); attempt++) {
+    rfdStatus(`Aircraft radio reply was incomplete, asking again (${attempt}/2)…`, 'warn');
+    const again = await radioSession(remoteVersion ? ['RTI5'] : ['RTI', 'RTI5'], rfdStatus);
+    if (!again) break;
+    for (const [k, v] of Object.entries(parseParams(replyOf(again, 'RTI5')))) if (!rp[k]) rp[k] = v;
+    remoteVersion = remoteVersion || version(replyOf(again, 'RTI'));
+  }
+  rfd.local = Object.keys(lp).length ? { version: version(replyOf(r, 'ATI')), params: lp } : null;
+  rfd.remote = Object.keys(rp).length ? { version: remoteVersion, params: rp } : null;
+  $('verLocal').textContent = rfd.local ? (rfd.local.version || '–') : 'No settings received';
+  $('verRemote').textContent = rfd.remote ? (rfd.remote.version || '–') : 'No reply over the air (is the aircraft radio on and linked?)';
+  buildForm('local'); buildForm('remote');
+  const nL = Object.keys(lp).length, nR = Object.keys(rp).length;
+  const gap = missing().length;
+  rfdStatus(!nR ? `Loaded ${nL} ground parameters; the aircraft radio did not reply.`
+    : gap ? `Loaded ${nL} ground and ${nR} aircraft parameters; ${gap} aircraft value(s) still missing. Load again to fill them.`
+    : `Loaded ${nL} ground and ${nR} aircraft parameters.`, !nL ? 'bad' : gap ? 'warn' : 'good');
+};
+
+$('btnRfdCopy').onclick = () => {
+  if (!rfd.local || !rfd.remote) return;
+  let n = 0;
+  for (const s of MUST_MATCH) {
+    const l = rfd.local.params[s], r = rfd.remote.params[s];
+    if (l && r && r.value !== l.value) { r.value = l.value; n++; }
+  }
+  buildForm('remote');
+  rfdStatus(n ? `Copied ${n} required setting(s) to the aircraft radio. Press Save settings to write them.` : 'Required settings already match.', n ? 'warn' : 'good');
+};
+
+$('btnRfdSave').onclick = async () => {
+  const changes = side => rfd[side] ? Object.entries(rfd[side].params).filter(([, p]) => p.value !== p.orig) : [];
+  const cl = changes('local'), cr = changes('remote');
+  if (!cl.length && !cr.length) return;
+  const list = (title, arr) => arr.length ? `<p><b>${title}</b><br>${arr.map(([s, p]) => `${s} ${p.name}: ${p.orig} → <b>${p.value}</b>`).join('<br>')}</p>` : '';
+  const s1warn = cl.some(([s]) => s === 'S1') ? '<p class="bad">Changing S1 on the ground radio cuts it off from the ESP.</p>' : '';
+  if (aircraftArmed()) { await rcPauseGuard('Save radio settings', 'Writing settings reboots the radios.'); return; }
+  const ok = await ask({ title: 'Write radio settings?', ok: 'Write and reboot radios', danger: true,
+    body: `${list('Aircraft radio', cr)}${list('Ground radio', cl)}${s1warn}<p>The aircraft radio is written first. Both radios reboot and the link drops for a few seconds.</p>${aircraftStateLine()}` });
+  if (!ok) return;
+  // Aircraft radio first: changing the ground radio first would cut the link before the aircraft is done
+  const cmds = [];
+  if (cr.length) cmds.push(...cr.map(([s, p]) => `RT${s}=${p.value}`), 'RT&W', 'RTZ');
+  if (cl.length) cmds.push(...cl.map(([s, p]) => `AT${s}=${p.value}`), 'AT&W', 'ATZ');
+  rfdStatus('Writing…', 'warn');
+  const r = await radioSession(cmds, rfdStatus);
+  if (!r) return;
+  const refused = cmds.filter(c => /=|&W/.test(c) && !replyOk(replyOf(r, c)));
+  if (refused.length) { rfdStatus(`Not confirmed by the radio: ${refused.join(', ')}. Load settings to check what was saved.`, 'bad'); return; }
+  cr.forEach(([, p]) => p.orig = p.value);
+  cl.forEach(([, p]) => p.orig = p.value);
+  markFields();
+  rfdStatus(`Saved ${cr.length} aircraft and ${cl.length} ground change(s). The radios are rebooting; the link returns in a few seconds.`, 'good');
+};
+
+async function resetDefaults(remote) {
+  if (aircraftArmed()) { await rcPauseGuard('Reset to defaults', 'This rewrites the radio settings.'); return; }
+  const ok = await ask({ title: `Reset the ${remote ? 'aircraft' : 'ground'} radio to factory defaults?`, ok: 'Reset and reboot', danger: true,
+    body: `<p>All settings return to factory values (NETID 25, 57600 baud, full power, and so on) and the radio reboots.</p>${remote ? '<p>If the ground radio is not also at defaults, the link may not return.</p>' : ''}${aircraftStateLine()}` });
+  if (!ok) return;
+  const pre = remote ? 'RT' : 'AT';
+  const r = await radioSession([pre + '&F', pre + '&W', pre + 'Z'], rfdStatus);
+  if (!r) return;
+  if (!replyOk(replyOf(r, pre + '&W'))) { rfdStatus('The radio did not confirm the reset.', 'bad'); return; }
+  rfdStatus(`${remote ? 'Aircraft' : 'Ground'} radio reset to defaults and rebooting. Load settings again to see them.`, 'good');
+}
+$('defLocal').onclick = () => resetDefaults(false);
+$('defRemote').onclick = () => resetDefaults(true);
+
+function parseTemp(text) { const t = text.match(/temp=(-?\d+)/); return t ? +t[1] : null; }
+$('btnTemps').onclick = async () => {
+  if (!await rcPauseGuard('Read RFD900 temperatures', 'Both radios go into command mode for about 5 seconds; RC and telemetry to the aircraft pause.')) return;
+  const note = (t, cls) => { $('tempsNote').textContent = t; $('tempsNote').className = 'note' + (cls ? ' ' + cls : ''); };
+  note('Reading…', 'warn');
+  const r = await radioSession(['ATI7', 'RTI7'], note);
+  if (!r) return;
+  const at = new Date().toLocaleTimeString();
+  const g = parseTemp(replyOf(r, 'ATI7')), a = parseTemp(replyOf(r, 'RTI7'));
+  state.rfdTempG = g === null ? { c: 'not reported', at } : { c: g, at };
+  state.rfdTempA = a === null ? { c: /ERROR/.test(replyOf(r, 'RTI7')) ? 'aircraft radio not linked' : 'no reply', at } : { c: a, at };
+  renderTemps();
+  note('');
+};
+
+// Console: each command runs in its own short session
+async function consoleRun(cmd) {
+  if (!await rcPauseGuard(`Run ${cmd}`, 'The radio goes into command mode for a few seconds; RC to the aircraft pauses.')) return;
+  logAt('> ' + cmd);
+  const r = await radioSession([cmd], (t) => logAt('(' + t + ')'));
+  if (r) logAt(replyOf(r, cmd) || '(no reply)');
+}
+$('btnAt').onclick = () => {
+  const c = $('atCmd').value.trim();
+  if (!c) return;
+  if (!/^(AT|RT)/i.test(c)) { logAt('(commands start with AT or RT)'); return; }
+  $('atCmd').value = '';
+  consoleRun(c);
+};
+$('atCmd').onkeydown = e => { if (e.key === 'Enter') $('btnAt').click(); };
+
+// Command reference
+const COMMANDS = [
+  ['ATI', 'Firmware version and country code', 'run'], ['ATI1', 'Firmware version number', 'run'],
+  ['ATI2', 'Board type', 'run'], ['ATI3', 'Board frequency', 'run'], ['ATI4', 'Board version', 'run'],
+  ['ATI5', 'All user settings and their values', 'run'], ['ATI5?', 'All user settings and their allowed ranges', 'run'],
+  ['ATI6', 'TDM timing report', 'run'], ['ATI7', 'RSSI signal report (includes temperature)', 'run'],
+  ['ATI8', '64-bit unique device ID', 'run'], ['ATI9', 'Calibration validation test', 'run'],
+  ['ATSn?', 'Show S parameter n', 'insert'], ['ATSn=X', 'Set S parameter n to X', 'insert'],
+  ['ATRn?', 'Show R parameter n', 'insert'], ['ATRn=X', 'Set R parameter n to X', 'insert'],
+  ['AT&W', 'Save current parameters to EEPROM', 'insert'], ['ATZ', 'Reboot the radio', 'insert'],
+  ['ATO', 'Leave command mode', 'insert'], ['AT&F', 'Reset all parameters to factory defaults', 'insert'],
+  ['AT&E?', 'Show the encryption key', 'run'], ['AT&E=X', 'Set the encryption key (hex)', 'insert'],
+  ['ATPP', 'GPIO configuration and state', 'run'], ['ATPO=X', 'Set GPIO X to output', 'insert'],
+  ['ATPI=X', 'Set GPIO X to input', 'insert'], ['ATPR=X', 'Read GPIO X input state', 'insert'],
+  ['ATPC=X,S', 'Set output GPIO X to state S', 'insert'], ['ATPM=X', 'Mirror input GPIO X on the remote radio', 'insert'],
+  ['AT&T=RSSI', 'Start RSSI debug report', 'insert'], ['AT&T=TDM', 'Start TDM debug report', 'insert'],
+  ['AT&T', 'Stop debug reports', 'insert'], ['AT&R', 'Record default PPM stream (vehicle side)', 'insert'],
+  ['AT&P', 'Change TDM phase (debug only)', 'insert'],
+  ['AT&UPDATE', 'Reboot into the bootloader for a firmware update (not through this page)', 'none']
+];
+(function renderCommands() {
+  const tb = $('cmdTable').querySelector('tbody');
+  for (const [cmd, desc, act] of COMMANDS) {
+    const tr = document.createElement('tr');
+    const rt = 'RT' + cmd.slice(2);
+    tr.innerHTML = `<td><code>${cmd}</code><br><code class="quiet">${rt}</code></td><td>${desc}</td><td style="white-space:nowrap"></td>`;
+    const cell = tr.children[2];
+    if (act === 'run') {
+      for (const c of [cmd, rt]) {
+        const b = document.createElement('button');
+        b.className = 'ghost small'; b.textContent = c.startsWith('RT') ? 'Run on aircraft' : 'Run'; b.disabled = true;
+        b.onclick = async () => {
+          $('atCmd').closest('details').open = true;
+          consoleRun(c);
+        };
+        cell.appendChild(b); cell.appendChild(document.createTextNode(' '));
+      }
+    } else if (act === 'insert') {
+      const b = document.createElement('button');
+      b.className = 'ghost small'; b.textContent = 'Insert'; b.disabled = true;
+      b.onclick = () => { $('atCmd').value = cmd; $('atCmd').closest('details').open = true; $('atCmd').focus(); };
+      cell.appendChild(b);
+    }
+    tb.appendChild(tr);
+  }
+})();
+
+buildForm('local'); buildForm('remote');
+setInterval(() => { if (!port) renderAircraft(); }, 1000);
+</script>
+</body>
+</html>
