@@ -763,6 +763,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #banner { display: none; margin-bottom: 14px; }
   #banner.on { display: block; }
   .omh { font-size: 13.5px; margin: 16px 0 4px; }
+  pre.lic { height: auto; max-height: 320px; white-space: pre-wrap; }
   #map { height: 460px; border-radius: 10px; border: 1px solid var(--line); }
   .big { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
@@ -836,6 +837,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <button data-tab="elrs">ELRS</button>
     <button data-tab="gcs">Ground station</button>
     <button data-tab="rfd">RFD900</button>
+    <button data-tab="about">About</button>
   </nav>
 
   <!-- ===================================================== STATUS -->
@@ -1152,7 +1154,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <button id="btnClearTrail" class="ghost small">Clear trail</button>
       </div>
       <div id="map"></div>
-      <p class="note" id="mapNote">Map imagery from Esri (switch layers at top right) needs an internet connection. For flying without internet, use Offline maps below.</p>
+      <p class="note" id="mapNote">Online maps come from the USGS National Map (United States only, public domain; switch layers at top right) and need an internet connection. For flying without internet, use Offline maps below.</p>
     </div>
 
     <div class="card mt">
@@ -1216,13 +1218,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
 
       <h3 class="omh">2. Save the area on screen</h3>
-      <p class="note" style="margin-top:0">Pan and zoom the map so it shows the area you want (at most 200 sq mi), then download. A download that stops can be resumed: download again with the same name and the tiles already saved are skipped.</p>
+      <p class="note" style="margin-top:0">Pan and zoom the map so it shows the area you want (at most 200 sq mi), then download. USGS maps cover the United States only and stop at zoom 16; closer zooms enlarge those tiles. A download that stops can be resumed: download again with the same name and the tiles already saved are skipped.</p>
       <div class="row">
         <label>Name <input id="omName" placeholder="e.g. North field" style="width:170px"></label>
-        <label>Map <select id="omLayer"><option>Satellite</option><option>Streets</option><option>Topographic</option></select></label>
+        <label>Map <select id="omLayer"><option>Satellite</option><option>Topographic</option></select></label>
         <label>Closest zoom <select id="omZoom">
-          <option value="15">15 (roads, fields)</option><option value="16">16 (tree lines)</option><option value="17">17 (buildings)</option>
-          <option value="18" selected>18 (cars, sheds)</option><option value="19">19 (sharpest)</option></select></label>
+          <option value="13">13 (towns, main roads)</option><option value="14">14 (roads, fields)</option>
+          <option value="15">15 (field edges)</option><option value="16" selected>16 (sharpest available, about 2 m per pixel)</option></select></label>
       </div>
       <p class="note" id="omEstimate">–</p>
       <div class="row">
@@ -1277,6 +1279,123 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </details>
     </div>
     </section>
+
+  <!-- ===================================================== ABOUT -->
+  <section class="tab" id="tab-about">
+    <div class="card">
+      <h2>About and licenses</h2>
+      <p class="note" style="margin-top:0">This page includes the open-source components listed below. Each is used under its license, whose full text follows. Their authors do not endorse this product.</p>
+      <div class="scroll"><table><thead><tr><th>Component</th><th>Used for</th><th>License</th></tr></thead><tbody><tr><td>Leaflet 1.9.4</td><td>map display</td><td>BSD-2-Clause</td></tr><tr><td>PMTiles 4.5.0 (also 3.2.1, inside protomaps-leaflet)</td><td>reading .pmtiles map files</td><td>BSD-3-Clause</td></tr><tr><td>protomaps-leaflet 5.1.0</td><td>drawing .pmtiles street maps</td><td>BSD-3-Clause</td></tr><tr><td>@protomaps/basemaps 5.7.2</td><td>street map styles</td><td>BSD-3-Clause</td></tr><tr><td>@mapbox/vector-tile 2.0.5</td><td>vector tile decoding</td><td>BSD-3-Clause</td></tr><tr><td>pbf 4.0.2</td><td>protocol buffer decoding</td><td>BSD-3-Clause</td></tr><tr><td>@mapbox/point-geometry 1.1.0</td><td>geometry helpers</td><td>ISC</td></tr><tr><td>potpack 1.0.2</td><td>label packing</td><td>ISC</td></tr><tr><td>quickselect 2.0.0</td><td>label placement</td><td>ISC</td></tr><tr><td>rbush 3.0.1</td><td>label placement</td><td>MIT</td></tr><tr><td>fflate 0.8.3</td><td>decompression</td><td>MIT</td></tr><tr><td>color2k 2.0.4</td><td>colour helpers</td><td>MIT</td></tr><tr><td>protocol-buffers-schema 3.6.1, resolve-protobuf-schema 2.1.0</td><td>protocol buffer schema (dependency of pbf)</td><td>MIT</td></tr></tbody></table></div>
+        <details class="mt"><summary>Leaflet 1.9.4 — BSD-2-Clause</summary><pre class="lic">Copyright (c) 2010-2023, Volodymyr Agafonkin
+Copyright (c) 2010-2011, CloudMade
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre></details>
+        <details class="mt"><summary>PMTiles 4.5.0 (also 3.2.1, inside protomaps-leaflet) — BSD-3-Clause</summary><pre class="lic">Copyright (c) Protomaps LLC
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre></details>
+        <details class="mt"><summary>protomaps-leaflet 5.1.0 — BSD-3-Clause</summary><pre class="lic">Copyright 2021-2024 Protomaps LLC
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre></details>
+        <details class="mt"><summary>@protomaps/basemaps 5.7.2 — BSD-3-Clause</summary><pre class="lic">Copyright (c) Protomaps LLC
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre></details>
+        <details class="mt"><summary>@mapbox/vector-tile 2.0.5 — BSD-3-Clause</summary><pre class="lic">Copyright (c) 2024, Mapbox
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre></details>
+        <details class="mt"><summary>pbf 4.0.2 — BSD-3-Clause</summary><pre class="lic">Copyright (c) 2024, Mapbox
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre></details>
+        <details class="mt"><summary>@mapbox/point-geometry 1.1.0 — ISC</summary><pre class="lic">Copyright (c) 2024, Mapbox
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot; AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.</pre></details>
+        <details class="mt"><summary>potpack 1.0.2 — ISC</summary><pre class="lic">Copyright (c) 2018, Mapbox
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot; AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.</pre></details>
+        <details class="mt"><summary>quickselect 2.0.0 — ISC</summary><pre class="lic">Copyright (c) 2018, Vladimir Agafonkin
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot; AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.</pre></details>
+        <details class="mt"><summary>rbush 3.0.1 — MIT</summary><pre class="lic">Copyright (c) 2016 Vladimir Agafonkin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</pre></details>
+        <details class="mt"><summary>fflate 0.8.3 — MIT</summary><pre class="lic">Copyright (c) 2026 Arjun Barrett
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</pre></details>
+        <details class="mt"><summary>color2k 2.0.4 — MIT</summary><pre class="lic">Copyright (c) 2020 Rico Kahler
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</pre></details>
+        <details class="mt"><summary>protocol-buffers-schema 3.6.1, resolve-protobuf-schema 2.1.0 — MIT</summary><pre class="lic">Copyright (c) 2014 Mathias Buus
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</pre></details>
+    </div>
+    <div class="card mt">
+      <h2>Map data</h2>
+      <ul class="note">
+        <li><b>Online and saved maps:</b> USGS The National Map (Imagery: USDA, USGS The National Map; Topographic: USGS The National Map). Public domain; credit requested by USGS: <i>“Map services and data available from U.S. Geological Survey, National Geospatial Program.”</i></li>
+        <li><b>Street map files (.pmtiles):</b> map data © OpenStreetMap contributors, available under the Open Database License (ODbL), <code>openstreetmap.org/copyright</code>. The file is supplied by the user.</li>
+      </ul>
+    </div>
+    <div class="card mt">
+      <h2>Trademarks</h2>
+      <p class="note" style="margin-top:0">RFD900 is a trademark of RFDesign. ESP32 is a trademark of Espressif Systems. ExpressLRS, ArduPilot and MAVLink are names of their respective projects. They are used here only to describe compatibility; this product is not affiliated with or endorsed by them.</p>
+    </div>
+  </section>
 
   <!-- ===================================================== RFD900 -->
   <section class="tab" id="tab-rfd">
@@ -2137,15 +2256,11 @@ function initMap() {
   if (map) return;
   if (typeof L === 'undefined') { $('mapNote').textContent = 'The map library could not load (no internet?). Positions still show above.'; return; }
   map = L.map('map', { zoomControl: true }).setView([20, 0], 2);
-  // OpenStreetMap's own tile servers refuse pages opened from a file (no referrer), so use Esri's
-  const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
+  // USGS National Map: public domain, United States only. Its tile cache stops at zoom 16, so
+  // closer zooms enlarge the zoom-16 tiles instead of asking the server for tiles it doesn't have.
   const layers = {
-    'Satellite': L.tileLayer(esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19, attribution: 'Imagery © Esri, Maxar, Earthstar Geographics' }),
-    'Streets': L.tileLayer(esri + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19, attribution: '© Esri, HERE, Garmin, OpenStreetMap contributors' }),
-    'Topographic': L.tileLayer(esri + 'World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19, attribution: '© Esri, HERE, Garmin, OpenStreetMap contributors' })
+    'Satellite': L.tileLayer(omTileUrl('Satellite'), { maxNativeZoom: OM_NATIVE_MAX, maxZoom: 20, attribution: OM_CREDIT.Satellite }),
+    'Topographic': L.tileLayer(omTileUrl('Topographic'), { maxNativeZoom: OM_NATIVE_MAX, maxZoom: 20, attribution: OM_CREDIT.Topographic })
   };
   let chosen = 'Satellite';
   try { chosen = localStorage.getItem('gcsMapLayer') || chosen; } catch (e) {}
@@ -2475,6 +2590,7 @@ function updateRfdButtons() { markFields(); }
 function clearRfd() {
   if (atJobPending) atJobPending({ atError: 'the device was disconnected' }); // end a running radio command now
   rfd.local = rfd.remote = null;
+  state.rfdTempG = state.rfdTempA = null; renderTemps(); $('tempsNote').textContent = '';
   $('verLocal').textContent = $('verRemote').textContent = '–';
   buildForm('local'); buildForm('remote');
   rfdStatus('Press Load settings to read both radios.');
@@ -3237,8 +3353,14 @@ setInterval(() => { if (!port) linkTick(); }, 1000);
 // Tiles and map files live in a folder the user picks (File System Access API), never in the browser.
 // Only the folder / file *handles* are remembered (IndexedDB) so they can be reopened after a reload.
 const OM_MAX_SQMI = 200, OM_MIN_ZOOM = 8, OM_PARALLEL = 6;
-const OM_ESRI = { Satellite: 'World_Imagery', Streets: 'World_Street_Map', Topographic: 'World_Topo_Map' };
-const OM_KB = { Satellite: 25, Streets: 12, Topographic: 15 }; // rough average tile size
+// Map source: USGS The National Map (public domain; USGS asks for a credit line)
+const OM_USGS = { Satellite: 'USGSImageryOnly', Topographic: 'USGSTopo' };
+const OM_NATIVE_MAX = 16; // deepest zoom the USGS tile cache has
+const OM_CREDIT = { Satellite: 'Imagery: USDA, USGS The National Map', Topographic: 'USGS The National Map' };
+const OM_KB = { Satellite: 25, Topographic: 15 }; // rough average tile size
+function omTileUrl(layer, z = '{z}', y = '{y}', x = '{x}') {
+  return `https://basemap.nationalmap.gov/arcgis/rest/services/${OM_USGS[layer]}/MapServer/tile/${z}/${y}/${x}`;
+}
 const omCanFs = 'showDirectoryPicker' in window;
 let omDir = null, omJob = null, omAreaLayer = null, omAreaName = '', omPmLayer = null, omPmFile = null;
 
@@ -3284,7 +3406,7 @@ function omRanges(b, maxZ) {
   }
   return out;
 }
-const omSize = mb => mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : mb >= 1 ? Math.round(mb) + ' MB' : Math.max(1, Math.round(mb * 1024)) + ' KB';
+const omSize = mb => mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : mb >= 1 ? Math.round(mb) + ' MB' : mb > 0 ? Math.max(1, Math.round(mb * 1024)) + ' KB' : '0 KB';
 const omSlug = s => s.trim().replace(/[<>:"/\\|?*\x00-\x1f]/g, '').replace(/\s+/g, ' ').replace(/[. ]+$/, '').slice(0, 60);
 
 function omEstimate() {
@@ -3360,14 +3482,14 @@ $('omDownload').onclick = async () => {
   const ok = await ask({ title: `Download “${name}”?`, ok: 'Download',
     body: `<p>${sq.toFixed(1)} sq mi of <b>${layer}</b>, zoom ${OM_MIN_ZOOM}–${maxZoom}: <b>${total.toLocaleString()} tiles</b>, about <b>${omSize(total * OM_KB[layer] / 1024)}</b>.</p>
       <p>Saved to <b>${omDir.name}\\${name}</b>. At roughly 10–30 tiles a second this takes about ${Math.max(1, Math.round(total / 15 / 60))} min. Keep this tab open; you can stop and resume later.</p>
-      <p class="quiet">Map imagery © Esri and its providers. Save only areas you need for your own flying.</p>` });
+      <p class="quiet">${OM_CREDIT[layer]} (public domain). Covers the United States only; tiles stop at zoom ${OM_NATIVE_MAX}.</p>` });
   if (!ok) return;
   if (!await omPermitted(omDir, true)) { $('omProgress').textContent = 'Permission to write to the folder was refused.'; return; }
 
   const job = omJob = { stop: false };
   $('omCancel').style.display = ''; $('omBar').style.display = ''; omEstimate();
   const areaDir = await omDir.getDirectoryHandle(name, { create: true });
-  const meta = { name, layer, source: OM_ESRI[layer], minZoom: OM_MIN_ZOOM, maxZoom,
+  const meta = { name, layer, source: OM_USGS[layer], minZoom: OM_MIN_ZOOM, maxZoom,
     bounds: [[b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]], tiles: total, created: new Date().toISOString(), complete: false };
   const writeMeta = async () => { const w = await (await areaDir.getFileHandle('area.json', { create: true })).createWritable(); await w.write(JSON.stringify(meta, null, 1)); await w.close(); };
   await writeMeta();
@@ -3395,7 +3517,7 @@ $('omDownload').onclick = async () => {
   async function one([z, x, y]) {
     const d = await dirFor(z, x);
     for (const ext of ['jpg', 'png']) { try { await d.getFileHandle(y + '.' + ext); skipped++; return; } catch (e) {} }
-    const url = `https://server.arcgisonline.com/ArcGIS/rest/services/${OM_ESRI[layer]}/MapServer/tile/${z}/${y}/${x}`;
+    const url = omTileUrl(layer, z, y, x);
     for (let attempt = 0; attempt < 3 && !job.stop; attempt++) {
       try {
         const r = await fetch(url);
@@ -3465,7 +3587,7 @@ $('omShow').onclick = async () => {
   if (!a) { $('omAreaInfo').textContent = 'That folder has no readable area.json.'; return; }
   omRemoveArea();
   omAreaLayer = new OmTileLayer('', { dir: dirH, bounds: a.bounds, minNativeZoom: a.minZoom, maxNativeZoom: a.maxZoom,
-    maxZoom: 21, zIndex: 5, attribution: 'Saved imagery © Esri' });
+    maxZoom: 21, zIndex: 5, attribution: /^World_/.test(a.source || '') ? 'Saved imagery © Esri' : 'Saved: ' + (OM_CREDIT[a.layer] || 'USGS The National Map') });
   omAreaLayer.on('tileunload', e => { if (e.tile.src.startsWith('blob:')) URL.revokeObjectURL(e.tile.src); });
   omAreaLayer.addTo(map);
   layersControl.addOverlay(omAreaLayer, 'Saved: ' + name);

@@ -3,7 +3,28 @@
 Browser ground-station page for the RFD900 / ESP32 ground station. Live at
 https://narl3yyy-svg.github.io/gcs-settings/ (Chrome or Edge on a PC, Chrome on Android).
 
+## Pages
+
+- `index.html`: the full ground station (Status, Air, ELRS, Ground station with map, RFD900, About).
+- `indexRFD.html`: only the RFD900 tools: Load/Save settings for both radios, RFD900
+  temperatures, AT console and command reference. No third-party code, works offline. Live at
+  https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html once uploaded.
+
 ## Changes
+
+### 2026-11-23: USGS maps, licenses, RFD-only page
+
+- **Maps switched to the USGS National Map** (public domain, United States only) instead of Esri:
+  Satellite (USGS imagery) and Topographic (USGS Topo). The USGS tile cache stops at zoom 16
+  (about 2 m per pixel); closer zooms enlarge those tiles. "Download area" saves USGS tiles, with
+  closest-zoom choices 13–16. Areas saved earlier from Esri still open.
+- **About tab** listing every open-source component inside the page (Leaflet, PMTiles,
+  protomaps-leaflet and the libraries they include) with its copyright and full license text, plus
+  map-data credits (USGS, OpenStreetMap) and a trademark notice.
+- **New `indexRFD.html`** with just the RFD900 tab and a Temperatures card (reads both radios'
+  temperature). It shows the aircraft's armed state and mode from its heartbeat, and blocks radio
+  commands while the aircraft is armed, as the full page does.
+- RFD900 temperature readings are cleared when the device disconnects, like the radio settings.
 
 ### 2026-11-20: Unplugging is detected
 
