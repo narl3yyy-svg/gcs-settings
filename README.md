@@ -27,9 +27,9 @@ Web Serial and folder access, so the pages do not work there.
 |---|---|---|---|
 | Web Serial (`navigator.serial`) | USB connection on a PC (ESP32 or plain RFD900) | ✓ | ✓ |
 | WebUSB (`navigator.usb`) | USB connection to the ESP32 on Android | ✓ | ✓ |
-| File System Access (`showDirectoryPicker`, `showOpenFilePicker`, `showSaveFilePicker`) | Offline maps folder, `.pmtiles` files, saving the page | ✓ | |
-| IndexedDB | Remembering which maps folder / map file was used (not the map data) | ✓ | |
-| localStorage | Remembering the chosen map layer | ✓ | |
+| File System Access (`showDirectoryPicker`, `showSaveFilePicker`) | Offline maps folder, saving the page | ✓ | |
+| IndexedDB | Remembering which maps folder was used (not the map data) | ✓ | |
+| localStorage | Remembering the chosen map, the map view and Private mode | ✓ | |
 | Streams, TextEncoder, Blob, `fetch` | Serial data, saving tiles and files | ✓ | ✓ |
 
 ### Libraries built into `index.html` (map only)
@@ -41,11 +41,8 @@ and they are embedded in the file:
 | Library | Version | License | Used for |
 |---|---|---|---|
 | [MapLibre GL JS](https://maplibre.org) | 5.24.0 | BSD-3-Clause | Map display: smooth zoom, rotation and tilt, markers, trail, mission route |
-| [PMTiles](https://github.com/protomaps/PMTiles) | 4.5.0 | BSD-3-Clause | Reading offline `.pmtiles` street map files from disk |
-| [@protomaps/basemaps](https://github.com/protomaps/basemaps) | 5.7.2 | BSD-3-Clause | Street map style (Light, Dark, Grey) |
-| Noto Sans label glyphs (via smp-noto-glyphs 2.0.0) | — | SIL Open Font License 1.1 (font); MIT (packaging) | Street-map labels without internet (Latin characters) |
 
-Included inside MapLibre GL JS and PMTiles:
+Included inside MapLibre GL JS:
 
 | Library | Version | License |
 |---|---|---|
@@ -68,7 +65,6 @@ Included inside MapLibre GL JS and PMTiles:
 | potpack | 2.1.0 | ISC |
 | quickselect | 3.0.0 | ISC |
 | tinyqueue | 3.0.0 | ISC |
-| fflate (inside PMTiles) | 0.8.3 | MIT |
 
 MapLibre GL JS also contains code from mapbox-gl-js v1.13 (BSD-3-Clause), glfx.js (MIT) and
 d3-color (BSD-3-Clause); these notices are part of its license text in the About tab.
@@ -79,7 +75,7 @@ d3-color (BSD-3-Clause); these notices are part of its license text in the About
 
 | Service | Contacted when | Without internet |
 |---|---|---|
-| Esri ArcGIS Online basemaps (`server.arcgisonline.com`) | Map in `index.html` (Satellite, Streets, Topographic), and "Download area" | Use saved areas or a `.pmtiles` file |
+| Esri ArcGIS Online basemaps (`server.arcgisonline.com`) | Map in `index.html` (Satellite, Streets, Topographic), and "Download area" | Use saved areas (Private mode) |
 | GitHub Pages | Opening the live site | Open a saved copy of the page |
 | ardupilot.org | Only when a parameter name is clicked, to open its documentation | Not needed |
 
@@ -100,9 +96,7 @@ Neither page sends analytics or tracking data.
 
 All embedded libraries are under permissive licenses (BSD-2-Clause, BSD-3-Clause, MIT, ISC)
 that allow commercial use, modification and closed-source distribution, provided their copyright
-notices and license texts are kept with the software. The embedded Noto Sans label glyphs are
-under the SIL Open Font License 1.1, which allows them to be bundled with and sold as part of
-software; the font may not be sold on its own, and its license text must be included. `index.html` includes them in its
+notices and license texts are kept with the software. `index.html` includes them in its
 **About** tab (component list, copyright lines and full license texts), which must stay in any
 copy that is sold or distributed. The BSD-3-Clause licenses also forbid using their authors'
 names to endorse or promote this product.
@@ -116,13 +110,24 @@ names to endorse or promote this product.
   keeping tiles offline, so the map feature is for **personal / non-commercial use only** and is
   **not part of the commercial product**. Users are responsible for complying with Esri's terms,
   including for areas saved with "Download area". The map shows Esri's credit lines.
-- **OpenStreetMap** (`.pmtiles` street map files supplied by the user): © OpenStreetMap
-  contributors, under the Open Database License (ODbL). Commercial use is allowed with this
-  credit, which the map shows.
 - **Commercial product:** `indexRFD.html` contains no map content and no third-party code, so
   none of the above applies to it.
-- **Earlier map sources** (USGS, NAIP, OpenAerialMap) are no longer used. Areas saved from them
+- **Earlier map sources** (USGS, NAIP, OpenAerialMap, `.pmtiles` street maps) are no longer used. Areas saved from them
   are public domain or CC BY 4.0 and can be kept.
+
+### Privacy
+
+- Neither page has accounts, analytics, tracking or advertising, or sends data about you, your
+  aircraft or your radios anywhere. `indexRFD.html` makes no internet requests at all.
+- `index.html` has **Private (offline only)** above the map, **on by default**: the map then
+  loads nothing from the internet and shows only areas saved in your own folder ("Offline map").
+- With Private off, online Esri maps and "Download area" fetch map squares from Esri. Like any
+  online map, Esri then receives the computer's internet (IP) address and which squares are
+  requested, which reveals the area being viewed. The page sends no cookies and not its own
+  address (`<meta name="referrer" content="no-referrer">`, `credentials: 'omit'`).
+- Saved areas, settings and missions stay on the PC; the browser remembers only the maps folder
+  and a few page settings. Opening the page from GitHub Pages lets GitHub see that it was
+  loaded; a copy saved with "Save this page to the PC" and opened from disk avoids that.
 
 ### Trademarks
 
@@ -140,6 +145,21 @@ In short: anyone may use, copy, change, share and sell it, as long as the copyri
 license text stay with it (credit to narl3yyy-svg). It comes with no warranty.
 
 ## Changes
+
+### 2026-11-24: Private mode, offline map choice, street map files removed, ELRS power
+
+- **Private (offline only)** above the map, on by default: no map requests at all; only saved
+  areas are shown. Unticking it asks first and explains what Esri can see. "Download area" works
+  only with Private off. No cookies or page address are sent with map requests.
+- The base-map chooser's last entry is now **Offline map: <name>**: the saved area shown with
+  "Show on map", read from the maps folder (choosing it switches the online maps off). "Show on
+  map" selects it automatically.
+- **Removed:** `.pmtiles` street map files, with PMTiles, @protomaps/basemaps and the built-in
+  label font (about 290 KB smaller). The About tab, README and `LICENSE` list what remains.
+- **ELRS output power:** "Match handset power" removed. The list shows the power levels the board
+  reports (+10 dBm / 10 mW and +13 dBm / 20 mW on this board). Finer 1 dBm steps would need a
+  firmware change on the ESP32.
+- Privacy section added to the About tab and this README.
 
 ### 2026-11-24: Esri maps back (index.html for non-commercial use)
 
