@@ -1219,13 +1219,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
 
       <h3 class="omh">2. Save the area on screen</h3>
-      <p class="note" style="margin-top:0">Pan and zoom the map so it shows the area you want (at most 200 sq mi), then download. USGS maps cover the United States only and stop at zoom 16; closer zooms enlarge those tiles. A download that stops can be resumed: download again with the same name and the tiles already saved are skipped.</p>
+      <p class="note" style="margin-top:0">Pan and zoom the map so it shows the area you want (at most 200 sq mi), then download. USGS maps cover the United States only. Satellite (NAIP, detailed) goes to zoom 18 (about 0.6 m per pixel); Satellite and Topographic stop at zoom 16 (about 2 m). A download that stops can be resumed: download again with the same name and the tiles already saved are skipped.</p>
       <div class="row">
         <label>Name <input id="omName" placeholder="e.g. North field" style="width:170px"></label>
-        <label>Map <select id="omLayer"><option>Satellite</option><option>Topographic</option></select></label>
+        <label>Map <select id="omLayer"><option value="NAIP">Satellite (NAIP, detailed)</option><option>Satellite</option><option>Topographic</option></select></label>
         <label>Closest zoom <select id="omZoom">
-          <option value="13">13 (towns, main roads)</option><option value="14">14 (roads, fields)</option>
-          <option value="15">15 (field edges)</option><option value="16" selected>16 (sharpest available, about 2 m per pixel)</option></select></label>
+</select></label>
       </div>
       <p class="note" id="omEstimate">–</p>
       <div class="row">
@@ -1389,7 +1388,8 @@ THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRES
     <div class="card mt">
       <h2>Map data</h2>
       <ul class="note">
-        <li><b>Online and saved maps:</b> USGS The National Map (Imagery: USDA, USGS The National Map; Topographic: USGS The National Map). Public domain; credit requested by USGS: <i>“Map services and data available from U.S. Geological Survey, National Geospatial Program.”</i></li>
+        <li><b>Satellite (NAIP, detailed):</b> National Agriculture Imagery Program (NAIP) aerial photography, U.S. Department of Agriculture, Farm Service Agency, served by USGS The National Map. Public domain.</li>
+        <li><b>Satellite and Topographic:</b> USGS The National Map (Imagery: USDA, USGS The National Map; Topographic: USGS The National Map). Public domain; credit requested by USGS: <i>“Map services and data available from U.S. Geological Survey, National Geospatial Program.”</i></li>
         <li><b>Street map files (.pmtiles):</b> map data © OpenStreetMap contributors, available under the Open Database License (ODbL), <code>openstreetmap.org/copyright</code>. The file is supplied by the user.</li>
       </ul>
     </div>
@@ -2265,12 +2265,20 @@ function initMap() {
   // USGS National Map: public domain, United States only. Its tile cache stops at zoom 16, so
   // closer zooms enlarge the zoom-16 tiles instead of asking the server for tiles it doesn't have.
   const layers = {
+    // NAIP aerial photos (USDA, public domain), drawn on request at full detail by USGS's WMS server
+    'Satellite (NAIP, detailed)': L.tileLayer.wms(OM_NAIP_WMS, { layers: omNaipLayer, format: 'image/jpeg', version: '1.3.0',
+      maxNativeZoom: OM_MAX_ZOOM.NAIP, maxZoom: 20, attribution: OM_CREDIT.NAIP }),
     'Satellite': L.tileLayer(omTileUrl('Satellite'), { maxNativeZoom: OM_NATIVE_MAX, maxZoom: 20, attribution: OM_CREDIT.Satellite }),
     'Topographic': L.tileLayer(omTileUrl('Topographic'), { maxNativeZoom: OM_NATIVE_MAX, maxZoom: 20, attribution: OM_CREDIT.Topographic })
   };
-  let chosen = 'Satellite';
-  try { chosen = localStorage.getItem('gcsMapLayer') || chosen; } catch (e) {}
-  (layers[chosen] || layers.Satellite).addTo(map);
+  let chosen = 'Satellite (NAIP, detailed)';
+  try { chosen = localStorage.getItem('gcsMapLayer2') || chosen; } catch (e) {} // new key: everyone starts on NAIP once
+  (layers[chosen] || layers['Satellite (NAIP, detailed)']).addTo(map);
+  // If the NAIP server rejects the layer name, try its plain layer "0" before giving up
+  const naip = layers['Satellite (NAIP, detailed)'];
+  let naipOk = 0, naipBad = 0;
+  naip.on('tileload', () => naipOk++);
+  naip.on('tileerror', () => { if (++naipBad === 6 && !naipOk && omNaipLayer !== '0') { omNaipLayer = '0'; naip.setParams({ layers: '0' }); } });
   onlineLayers = layers;
   // Say why the map is empty instead of leaving a blank square
   let tileOk = 0, tileBad = 0;
@@ -2291,7 +2299,7 @@ function initMap() {
   map.on('moveend baselayerchange', mapHint);
   layersControl = L.control.layers(layers, null, { position: 'topright' }).addTo(map);
   map.on('moveend zoomend', omEstimate);
-  map.on('baselayerchange', e => { try { localStorage.setItem('gcsMapLayer', e.name); } catch (err) {} });
+  map.on('baselayerchange', e => { try { localStorage.setItem('gcsMapLayer2', e.name); } catch (err) {} });
   trailLayer = L.polyline([], { color: '#2563eb', weight: 2, opacity: .7 }).addTo(map);
   lineLayer = L.polyline([], { color: '#b45309', weight: 2, dashArray: '6 6' }).addTo(map);
   map.on('dragstart', () => { $('mFollow').checked = false; });
@@ -3377,10 +3385,27 @@ setInterval(() => { if (!port) linkTick(); }, 1000);
 // Only the folder / file *handles* are remembered (IndexedDB) so they can be reopened after a reload.
 const OM_MAX_SQMI = 200, OM_MIN_ZOOM = 8, OM_PARALLEL = 6;
 // Map source: USGS The National Map (public domain; USGS asks for a credit line)
-const OM_USGS = { Satellite: 'USGSImageryOnly', Topographic: 'USGSTopo' };
+const OM_USGS = { Satellite: 'USGSImageryOnly', Topographic: 'USGSTopo', NAIP: 'USGSNAIPImagery' };
 const OM_NATIVE_MAX = 16; // deepest zoom the USGS tile cache has
-const OM_CREDIT = { Satellite: 'Imagery: USDA, USGS The National Map', Topographic: 'USGS The National Map' };
-const OM_KB = { Satellite: 25, Topographic: 15 }; // rough average tile size
+const OM_MAX_ZOOM = { NAIP: 18, Satellite: OM_NATIVE_MAX, Topographic: OM_NATIVE_MAX }; // NAIP is about 0.6 m per pixel
+const OM_NAIP_WMS = 'https://imagery.nationalmap.gov/arcgis/services/USGSNAIPImagery/ImageServer/WMSServer';
+let omNaipLayer = 'USGSNAIPImagery:NaturalColor';
+const OM_CREDIT = { NAIP: 'Imagery: USDA NAIP, USGS The National Map', Satellite: 'Imagery: USDA, USGS The National Map', Topographic: 'USGS The National Map' };
+const OM_KB = { NAIP: 30, Satellite: 25, Topographic: 15 }; // rough average tile size
+const OM_ZOOM_TEXT = { 13: 'towns, main roads', 14: 'roads, fields', 15: 'field edges', 16: 'tree lines, about 2 m per pixel', 17: 'buildings, about 1 m', 18: 'vehicles, sheds, about 0.6 m' };
+function omFillZooms() {
+  const sel = $('omZoom'), max = OM_MAX_ZOOM[$('omLayer').value], keep = +sel.value || max;
+  sel.innerHTML = '';
+  for (let z = 13; z <= max; z++) sel.add(new Option(`${z} (${OM_ZOOM_TEXT[z]})`, z));
+  sel.value = Math.min(keep, max);
+}
+// Web Mercator box of tile z/x/y, for asking the WMS server for exactly that tile
+function omNaipUrl(z, y, x) {
+  const R = 20037508.342789244, size = 2 * R / 2 ** z;
+  const minx = -R + x * size, maxy = R - y * size;
+  return `${OM_NAIP_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${encodeURIComponent(omNaipLayer)}&STYLES=&CRS=EPSG:3857` +
+    `&BBOX=${minx},${maxy - size},${minx + size},${maxy}&WIDTH=256&HEIGHT=256&FORMAT=image/jpeg`;
+}
 function omTileUrl(layer, z = '{z}', y = '{y}', x = '{x}') {
   return `https://basemap.nationalmap.gov/arcgis/rest/services/${OM_USGS[layer]}/MapServer/tile/${z}/${y}/${x}`;
 }
@@ -3441,7 +3466,9 @@ function omEstimate() {
     (tooBig ? ` · <span class="bad">zoom in: at most ${OM_MAX_SQMI} sq mi per area</span>` : '');
   $('omDownload').disabled = !omCanFs || !omDir || tooBig || !!omJob;
 }
-$('omLayer').onchange = $('omZoom').onchange = omEstimate;
+omFillZooms();
+$('omLayer').onchange = () => { omFillZooms(); omEstimate(); };
+$('omZoom').onchange = omEstimate;
 
 // --- maps folder
 function omSetDir(h) {
@@ -3503,9 +3530,9 @@ $('omDownload').onclick = async () => {
   if (sq > OM_MAX_SQMI) return;
   const ranges = omRanges(b, maxZoom), total = ranges.reduce((t, r) => t + r.count, 0);
   const ok = await ask({ title: `Download “${name}”?`, ok: 'Download',
-    body: `<p>${sq.toFixed(1)} sq mi of <b>${layer}</b>, zoom ${OM_MIN_ZOOM}–${maxZoom}: <b>${total.toLocaleString()} tiles</b>, about <b>${omSize(total * OM_KB[layer] / 1024)}</b>.</p>
+    body: `<p>${sq.toFixed(1)} sq mi of <b>${$('omLayer').selectedOptions[0].text}</b>, zoom ${OM_MIN_ZOOM}–${maxZoom}: <b>${total.toLocaleString()} tiles</b>, about <b>${omSize(total * OM_KB[layer] / 1024)}</b>.</p>
       <p>Saved to <b>${omDir.name}\\${name}</b>. At roughly 10–30 tiles a second this takes about ${Math.max(1, Math.round(total / 15 / 60))} min. Keep this tab open; you can stop and resume later.</p>
-      <p class="quiet">${OM_CREDIT[layer]} (public domain). Covers the United States only; tiles stop at zoom ${OM_NATIVE_MAX}.</p>` });
+      <p class="quiet">${OM_CREDIT[layer]} (public domain). Covers the United States only.</p>` });
   if (!ok) return;
   if (!await omPermitted(omDir, true)) { $('omProgress').textContent = 'Permission to write to the folder was refused.'; return; }
 
@@ -3540,13 +3567,14 @@ $('omDownload').onclick = async () => {
   async function one([z, x, y]) {
     const d = await dirFor(z, x);
     for (const ext of ['jpg', 'png']) { try { await d.getFileHandle(y + '.' + ext); skipped++; return; } catch (e) {} }
-    const url = omTileUrl(layer, z, y, x);
+    const url = layer === 'NAIP' ? omNaipUrl(z, y, x) : omTileUrl(layer, z, y, x);
     for (let attempt = 0; attempt < 3 && !job.stop; attempt++) {
       try {
         const r = await fetch(url);
         if (r.status === 404) { missing++; return; }
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const blob = await r.blob();
+        if (!/^image\//.test(blob.type)) throw new Error('the map server sent an error instead of an image');
         const ext = /png/.test(blob.type) ? 'png' : 'jpg';
         const w = await (await d.getFileHandle(y + '.' + ext, { create: true })).createWritable();
         await w.write(blob); await w.close();

@@ -64,6 +64,7 @@ Included inside protomaps-leaflet and PMTiles:
 
 | Service | Contacted when | Without internet |
 |---|---|---|
+| USGS NAIP imagery (`imagery.nationalmap.gov`) | Satellite (NAIP, detailed) map, and "Download area" with that map | Use saved areas or a `.pmtiles` file |
 | USGS The National Map (`basemap.nationalmap.gov`) | Online Satellite / Topographic map, and "Download area" | Use saved areas or a `.pmtiles` file |
 | GitHub Pages | Opening the live site | Open a saved copy of the page |
 | ardupilot.org | Only when a parameter name is clicked, to open its documentation | Not needed |
@@ -92,6 +93,11 @@ names to endorse or promote this product.
 
 ### Map data
 
+- **NAIP aerial imagery** (Satellite (NAIP, detailed) map, online and saved): National Agriculture
+  Imagery Program, U.S. Department of Agriculture, Farm Service Agency, served by USGS The National
+  Map. Listed as public domain; free to use, including commercially and offline. Credited
+  "USDA NAIP, USGS The National Map". USDA considered moving NAIP to a paid license in 2017–2018;
+  it is still listed as public domain, but check the USDA FSA NAIP page if that changes.
 - **USGS The National Map** (online and saved maps): public domain; free to use, including
   commercially and offline. USGS asks for a credit line: *"Map services and data available from
   U.S. Geological Survey, National Geospatial Program."* Imagery is credited "USDA, USGS The
@@ -119,6 +125,16 @@ In short: anyone may use, copy, change, share and sell it, as long as the copyri
 license text stay with it (credit to narl3yyy-svg). It comes with no warranty.
 
 ## Changes
+
+### 2026-11-24: Detailed NAIP satellite map
+
+- New map layer **Satellite (NAIP, detailed)**, now the default: USDA NAIP aerial photos (about
+  0.6 m per pixel) from the USGS NAIP imagery service, sharp to zoom 18. The other USGS maps stop
+  at zoom 16 (about 2 m per pixel). NAIP is drawn on request by the server, so it loads more
+  slowly. Lower 48 states; photos are 1–3 years old and taken in summer.
+- "Download area" can save NAIP down to zoom 18 (the zoom choices follow the selected map).
+  200 sq mi at zoom 18 is about 47,000 tiles (roughly 1.4 GB) and takes a few hours.
+- Credit for NAIP added to the About tab and the map.
 
 ### 2026-11-23: USGS maps, licenses, RFD-only page
 
