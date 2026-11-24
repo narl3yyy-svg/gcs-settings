@@ -1,109 +1,122 @@
-<div align="center">
+<p align="center">
+  <img src="docs/banner.svg" alt="GCS Settings: browser ground station for RFD900 radios and the ESP32 ground station" width="100%">
+</p>
 
-# GCS Settings
-
-**Browser ground station for RFD900 radios and the ESP32 ground station**
-
-Single-file web pages · No install · Works offline · No tracking
-
-[Open the full ground station](https://narl3yyy-svg.github.io/gcs-settings/) ·
-[Open the RFD900 tool](https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html) ·
-[License](LICENSE)
-
-</div>
+<p align="center">
+  <a href="https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html"><b>RFD900 Tool</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://narl3yyy-svg.github.io/gcs-settings/"><b>Full Ground Station</b></a>
+  &nbsp;·&nbsp;
+  <a href="#quick-start">Quick start</a>
+  &nbsp;·&nbsp;
+  <a href="#licensing">Licensing</a>
+  &nbsp;·&nbsp;
+  <a href="#changelog">Changelog</a>
+</p>
 
 ---
 
-## Contents
+## Overview
 
-- [Pages](#pages)
-- [Features](#features)
-- [Getting started](#getting-started)
-- [Offline use and privacy](#offline-use-and-privacy)
-- [Dependencies](#dependencies)
-- [Licensing](#licensing)
-- [Changelog](#changelog)
+**GCS Settings** configures and monitors long-range telemetry links built on **RFD900** radios,
+directly from the browser. Connect over USB, read and compare both radios side by side, change
+settings safely and watch the link, without installing anything.
 
-## Pages
+Each page is a **single self-contained HTML file**: no installer, no server, no account and no
+tracking. Saved locally, it runs entirely offline.
 
-| Page | What it is | Use |
+<p align="center">
+  <img src="docs/rfd900-tool.png" alt="The RFD900 tool showing both radios' settings and temperatures" width="900">
+  <br>
+  <sub>RFD900 tool, dark theme (sample values from a simulated radio)</sub>
+</p>
+
+## Editions
+
+| | **RFD900 Tool** | **Full Ground Station** |
 |---|---|---|
-| [`index.html`](https://narl3yyy-svg.github.io/gcs-settings/) | Full ground station: Status, Air, ELRS, Ground station (map, missions, offline maps), RFD900 and About tabs | Personal / non-commercial (its map uses Esri basemaps) |
-| [`indexRFD.html`](https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html) | RFD900 tools only: radio settings, temperatures, AT console, command reference | **Commercial product.** No third-party code, no map content, no internet use |
+| File | [`indexRFD.html`](https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html) | [`index.html`](https://narl3yyy-svg.github.io/gcs-settings/) |
+| Radio settings, temperatures, AT console | ✓ | ✓ |
+| ELRS, GPS, ArduPilot telemetry and missions | | ✓ |
+| Map with offline areas | | ✓ |
+| Internet access | Never | Optional (online maps) |
+| Third-party code | None | MapLibre GL JS (map) |
+| Licensing | **Commercial product** | Personal / non-commercial (Esri map content) |
 
 ## Features
 
-| Area | Highlights |
-|---|---|
-| **RFD900 radios** | Load, compare and save settings on the ground and aircraft radios · copy required settings to the aircraft · reset to defaults · read temperatures · AT console with a full SiK command reference |
-| **Connections** | ESP32 ground station (115200 baud) or a plain RFD900 on a USB-serial cable (direct mode, chosen baud) · recovers from serial hiccups · detects unplugging and clears stale readings |
-| **Aircraft (ArduPilot)** | Live telemetry and armed state · flight modes and commands · parameters · missions (click to add waypoints, drag to move, Mission Planner `.waypoints` files) · flight logs |
-| **ELRS and ground station** | Link status · output power · binding phrase and bind · RC rate · ground position for Follow mode · board name and reboot |
-| **Map** | MapLibre viewer with smooth zoom, rotation and tilt · Esri Satellite, Streets and Topographic · ground, aircraft, home, trail and mission overlays |
-| **Offline maps** | Save areas (up to 200 sq mi, zoom 15–19) as files in a folder you choose · stop and resume downloads · show a saved area as the **Offline map** with no internet |
-| **Safety** | Radio commands, power changes and reboots that interrupt RC are blocked while the aircraft is armed and confirmed otherwise |
+**Radio configuration**
+- Load, compare and save settings on the ground and aircraft radios, with fields that must match
+  highlighted
+- Copy the required settings to the aircraft radio, or reset either radio to factory defaults
+- Read both radios' temperatures
+- AT console with the complete SiK command reference
 
-## Getting started
+**Connectivity**
+- ESP32 ground station, or a plain RFD900 on a USB-serial cable (direct mode at the chosen baud)
+- Automatic recovery from serial errors; unplugging is detected and stale readings are cleared
 
-1. Open a page in **Chrome or Edge** on a PC (or Chrome on Android for the ESP32 over USB).
-2. Plug in the ESP32 ground station or the RFD900's USB cable.
-3. For a plain RFD900, pick its baud rate next to **Connect** (usually 57600).
-4. Press **Connect** and choose the COM port.
+**Flight operations** *(Full Ground Station)*
+- ArduPilot telemetry, flight modes, commands, parameters and flight logs over MAVLink
+- Mission planning on the map: click to add waypoints, drag to move, Mission Planner `.waypoints`
+- ELRS link status, output power, binding phrase and bind; RC rate and Follow-mode ground position
+
+**Maps** *(Full Ground Station)*
+- Smooth zoom, rotation and tilt (MapLibre GL JS); Esri Satellite, Streets and Topographic
+- Offline areas up to 200 sq mi saved to a folder of your choice, with stop and resume
+- **Private (offline only)** mode, on by default: no map requests leave the computer
+
+**Safety**
+- Actions that interrupt RC (radio command mode, power changes, reboots) are blocked while the
+  aircraft is armed and confirmed otherwise
+
+## Quick start
+
+1. Open a page in **Chrome** or **Edge** on a PC (or Chrome on Android for the ESP32 over USB).
+2. Connect the ESP32 ground station or the RFD900's USB cable.
+3. For a plain RFD900, choose its baud rate next to **Connect** (usually 57600).
+4. Select **Connect** and pick the COM port.
 
 > [!TIP]
-> If the COM port does not appear, install the radio cable's USB driver (FTDI or CP210x) and
-> close other programs that use the port, such as Mission Planner.
-
-## Offline use and privacy
-
-- **Private (offline only)** above the map is **on by default**: the map loads nothing from the
-  internet and shows only areas saved in your own folder.
-- To save an area, untick Private, frame the area on the map, then use **Offline maps → Download
-  area**. Saved areas open instantly from disk afterwards.
-- Use **Save this page to the PC** once, then open that copy from disk: everything (radios, map
-  library, saved areas) works with no internet, and no website is contacted.
-- Neither page has accounts, analytics, tracking or advertising. `indexRFD.html` makes no
-  internet requests at all.
+> To use the tool without internet, open it once and choose **Save this page to the PC** (Full
+> Ground Station) or save the page with <kbd>Ctrl</kbd>+<kbd>S</kbd>, then open the saved file.
 
 > [!NOTE]
-> With Private off, online Esri maps and downloads fetch map squares from Esri. Like any online
-> map, Esri then receives your internet (IP) address and which squares are requested. The page
-> sends no cookies and not its own address.
+> No COM port listed? Install the cable's USB driver (FTDI or CP210x) and close other programs
+> using the port, such as Mission Planner.
+
+## Requirements
+
+| Component | Requirement |
+|---|---|
+| Browser | Chrome or Edge (Web Serial). Chrome on Android uses WebUSB for the ESP32. |
+| Radios | RFD900 family with SiK firmware |
+| Ground station | ESP32 ground station firmware, or a plain RFD900 with an FTDI / CP210x cable |
+| Autopilot | ArduPilot, for telemetry, missions, parameters and the armed check |
+| Graphics | WebGL, for the map (Full Ground Station only) |
+
+## Privacy
+
+- No accounts, analytics, tracking or advertising. No data about you, your aircraft or your radios
+  is sent anywhere.
+- The RFD900 Tool makes **no internet requests**.
+- In the Full Ground Station, **Private (offline only)** is on by default, so the map shows only
+  areas saved on your computer. With it off, map squares are fetched from Esri, which then sees
+  your IP address and the area requested; no cookies or page address are sent.
+- Settings, saved areas and missions stay on your computer.
 
 ## Dependencies
 
-Each page is one self-contained HTML file: nothing to install or build, no server, and no
-scripts, styles or fonts loaded from the internet.
-
 <details>
-<summary><b>Browser features</b></summary>
-
+<summary><b>Embedded libraries</b> (Full Ground Station map only)</summary>
 <br>
 
-Chrome or Edge on a PC, or Chrome on Android (USB to the ESP32 only). Firefox and Safari lack
-Web Serial and folder access.
-
-| Feature | Used for | `index.html` | `indexRFD.html` |
-|---|---|:---:|:---:|
-| Web Serial | USB connection on a PC | ✓ | ✓ |
-| WebUSB | USB connection to the ESP32 on Android | ✓ | ✓ |
-| File System Access | Offline maps folder, saving the page | ✓ | |
-| IndexedDB | Remembering the maps folder (not the map data) | ✓ | |
-| localStorage | Remembering the chosen map, map view and Private mode | ✓ | |
-| WebGL | Drawing the map | ✓ | |
-
-</details>
-
-<details>
-<summary><b>Libraries built into <code>index.html</code></b> (map only)</summary>
-
-<br>
-
-All other code (radios, MAVLink, ELRS, missions) is written directly in the page.
+All radio, MAVLink, ELRS and mission code is written directly in the page. The map uses
+[MapLibre GL JS](https://maplibre.org) 5.24.0 (BSD-3-Clause), embedded in the file together with
+the libraries it includes:
 
 | Library | Version | License |
 |---|---|---|
-| [MapLibre GL JS](https://maplibre.org) | 5.24.0 | BSD-3-Clause |
 | @mapbox/jsonlint-lines-primitives | 2.0.3 | MIT |
 | @mapbox/point-geometry | 1.1.0 | ISC |
 | @mapbox/tiny-sdf | 2.3.0 | BSD-2-Clause |
@@ -125,155 +138,136 @@ All other code (radios, MAVLink, ELRS, missions) is written directly in the page
 | tinyqueue | 3.0.0 | ISC |
 
 MapLibre GL JS also contains code from mapbox-gl-js v1.13 (BSD-3-Clause), glfx.js (MIT) and
-d3-color (BSD-3-Clause). `indexRFD.html` contains no third-party code.
+d3-color (BSD-3-Clause).
+
+</details>
+
+<details>
+<summary><b>Browser features</b></summary>
+<br>
+
+| Feature | Purpose | RFD900 Tool | Full Ground Station |
+|---|---|:---:|:---:|
+| Web Serial | USB connection on a PC | ✓ | ✓ |
+| WebUSB | USB connection to the ESP32 on Android | ✓ | ✓ |
+| File System Access | Offline maps folder, saving the page | | ✓ |
+| IndexedDB | Remembering the maps folder | | ✓ |
+| localStorage | Map choice, map view, Private mode | | ✓ |
+| WebGL | Drawing the map | | ✓ |
 
 </details>
 
 <details>
 <summary><b>Online services</b> (optional)</summary>
-
 <br>
 
-| Service | Contacted when | Without internet |
-|---|---|---|
-| Esri ArcGIS Online (`server.arcgisonline.com`) | Online map with Private off, and "Download area" | Saved areas (Private mode) |
-| GitHub Pages | Opening the live site | A saved copy of the page |
-| ardupilot.org | Only when a parameter name is clicked | Not needed |
-
-</details>
-
-<details>
-<summary><b>Hardware and firmware</b></summary>
-
-<br>
-
-| Item | Needed for |
+| Service | When it is contacted |
 |---|---|
-| RFD900 radios with SiK firmware | Radio settings, temperatures, AT console |
-| ESP32 ground station firmware | ELRS, bind, GPS, ground-station status and RC (not needed for a plain RFD900) |
-| FTDI or CP210x USB driver (Windows) | A plain RFD900 on a USB-serial cable |
-| ArduPilot autopilot | Air, Mission and parameter features, and the armed check |
+| Esri ArcGIS Online (`server.arcgisonline.com`) | Online maps with Private off, and "Download area" |
+| GitHub Pages | Opening the live site (not a saved copy) |
+| ardupilot.org | Only when a parameter name is clicked, to open its documentation |
 
 </details>
 
 ## Licensing
 
-| Part | License | Notes |
+| Part | License | Terms |
 |---|---|---|
-| This project's code (`index.html`, `indexRFD.html`) | **MIT**, © 2026 narl3yyy-svg | Use, copy, change, share and sell freely; keep the copyright notice and license text. No warranty. See [`LICENSE`](LICENSE). |
-| Embedded libraries (MapLibre GL JS and its parts) | BSD-2-Clause, BSD-3-Clause, MIT, ISC | Commercial use allowed. Their notices and full license texts are in the **About** tab and must stay with any copy. |
-| Map content (Esri Satellite, Streets, Topographic) | Esri terms of use | **Personal / non-commercial use only**; not part of the commercial product. Users are responsible for following Esri's terms, including for saved areas. |
+| Project code (`indexRFD.html`, `index.html`) | **MIT** © 2026 narl3yyy-svg | Free to use, modify, distribute and sell with the copyright notice and license text. Provided without warranty. See [`LICENSE`](LICENSE). |
+| Embedded libraries (MapLibre GL JS and its parts) | BSD-2-Clause, BSD-3-Clause, MIT, ISC | Permissive; notices and full license texts are in the **About** tab and must remain with any copy. |
+| Map content (Esri) | Esri terms of use | Personal / non-commercial use only. Users are responsible for complying with Esri's terms, including for saved areas. |
 
 > [!IMPORTANT]
-> The commercial product is **`indexRFD.html`**. It contains no map content and no third-party
-> code, so the Esri terms above do not apply to it.
+> The commercial product is the **RFD900 Tool** (`indexRFD.html`). It contains no map content and
+> no third-party code, so third-party and map terms do not apply to it.
 
 <details>
 <summary><b>Map credits</b></summary>
-
 <br>
 
 - **Esri World Imagery:** Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community.
-- **Esri World Street Map and World Topographic Map:** © Esri, HERE, Garmin, © OpenStreetMap
+- **Esri World Street Map, World Topographic Map:** © Esri, HERE, Garmin, © OpenStreetMap
   contributors, and the GIS User Community.
-- **Earlier sources** (USGS, NAIP, OpenAerialMap, `.pmtiles` street maps) are no longer used.
-  Areas saved from them are public domain or CC BY 4.0 and can be kept.
+- **Earlier sources** (USGS, NAIP, OpenAerialMap, `.pmtiles` street maps) are no longer used. Areas
+  saved from them are public domain or CC BY 4.0 and may be kept.
 
 </details>
 
 <details>
 <summary><b>Trademarks</b></summary>
-
 <br>
 
-RFD900 is a trademark of RFDesign, ESP32 of Espressif Systems; ExpressLRS, ArduPilot and MAVLink
-are names of their respective projects. They are used only to describe compatibility. This
-product is not affiliated with or endorsed by them.
+RFD900 is a trademark of RFDesign; ESP32 is a trademark of Espressif Systems. ExpressLRS, ArduPilot
+and MAVLink are names of their respective projects. They are used only to describe compatibility;
+this product is not affiliated with or endorsed by them.
 
 </details>
 
 ## Changelog
 
 <details open>
-<summary><b>2026-11-24</b> · Private mode, Offline map, Esri maps, layout</summary>
-
+<summary><b>November 24, 2026</b>: Privacy, offline maps and Esri imagery</summary>
 <br>
 
-- **Private (offline only)** above the map, on by default: no map requests at all. Unticking it
-  asks first. No cookies or page address are sent with map requests.
-- The map chooser's **Offline map: &lt;name&gt;** shows the saved area from disk; **Show on map**
-  selects it automatically.
-- **Esri** Satellite (to about zoom 19), Streets and Topographic are back; downloads save the chosen
-  map to zoom 15–19, 8 tiles at a time.
-- **Stop** in "Download area" stops at once; requests time out after 20 s; resume by downloading
-  again with the same name.
-- **ELRS output power:** "Match handset power" removed; the list shows the levels the board reports
-  (+10 dBm and +13 dBm). Finer 1 dBm steps would need an ESP32 firmware change.
-- Ground station tab: the RC rate, ground position and board tiles now sit below Mission.
-- Removed: `.pmtiles` street maps (with PMTiles, @protomaps/basemaps and the label font), USGS,
-  NAIP and OpenAerialMap imagery.
-- Map viewer switched from Leaflet to **MapLibre GL JS** (smooth zoom, rotation, tilt).
+- **Private (offline only)** mode, on by default; map requests send no cookies or page address
+- **Offline map** option shows a saved area from disk and is selected automatically by *Show on map*
+- Esri Satellite (to zoom 19), Streets and Topographic restored; downloads to zoom 15–19, 8 tiles at a time
+- **Stop** in *Download area* takes effect immediately; requests time out after 20 seconds
+- ELRS output power lists the levels the board reports; *Match handset power* removed
+- Ground Station tab: RC rate, ground position and board tiles moved below Mission
+- Map viewer moved from Leaflet to MapLibre GL JS
+- Removed: `.pmtiles` street maps, USGS, NAIP and OpenAerialMap imagery
 
 </details>
 
 <details>
-<summary><b>2026-11-23</b> · Licenses and the RFD900 page</summary>
-
+<summary><b>November 23, 2026</b>: Licensing and the RFD900 Tool</summary>
 <br>
 
-- **About** tab with every embedded component's copyright and full license text, map credits and
-  a trademark notice.
-- New **`indexRFD.html`**: the RFD900 tools plus a Temperatures card, with the aircraft's armed
-  state shown and radio commands blocked while armed.
-- Temperature readings clear when the device disconnects.
+- **About** tab with every embedded component's copyright and license text, map credits and trademarks
+- New **RFD900 Tool** (`indexRFD.html`) with a Temperatures card and armed-state protection
+- Temperature readings clear when the device disconnects
 
 </details>
 
 <details>
-<summary><b>2026-11-20</b> · Unplug detection</summary>
-
+<summary><b>November 20, 2026</b>: Disconnect handling</summary>
 <br>
 
-- Pulling the USB cable switches the page to **Not connected** within a couple of seconds (closing
-  an unplugged port used to hang).
-- Disconnecting empties both radio columns, so stale settings are never shown; a running radio
-  command ends at once.
+- Unplugging switches to *Not connected* within seconds and clears both radio columns
+- A running radio command ends immediately when the device is removed
 
 </details>
 
 <details>
-<summary><b>2026-11-07</b> · Offline maps</summary>
-
+<summary><b>November 7, 2026</b>: Offline maps</summary>
 <br>
 
-- **Offline maps** section: choose a maps folder, save the area on screen (up to 200 sq mi) with a
-  size estimate, progress and resume, and show saved areas with no internet.
-- The map library is built into the page, and **Save this page to the PC** makes a copy that runs
-  fully offline.
+- Save map areas to a chosen folder with size estimates, progress and resume
+- Map library embedded; *Save this page to the PC* creates a fully offline copy
 
 </details>
 
 <details>
-<summary><b>2026-11-06</b> · Direct RFD900 mode</summary>
-
+<summary><b>November 6, 2026</b>: Direct RFD900 mode</summary>
 <br>
 
-- The Connect picker lists every COM port.
-- A plain RFD900 is detected automatically; the page runs the radio command sessions itself
-  (`+++`, AT/RT commands, `ATO`) at the chosen baud rate. ESP32-only features need the ESP32.
+- All COM ports listed; a plain RFD900 is detected and driven directly at the chosen baud rate
 
 </details>
 
 <details>
-<summary><b>2026-10-19</b> · Reliable RFD900 reads</summary>
-
+<summary><b>October 19, 2026</b>: Reliable radio reads</summary>
 <br>
 
-- Fixed "no reply from the ground station" after a serial hiccup: the page now keeps reading
-  instead of stopping until the board was replugged.
-- 16× larger receive buffer; long replies kept; stray bytes no longer spoil the next reply.
-- Nothing else is sent while the radios are in command mode; read-only commands retry once;
-  board errors show at once.
-- Recovers from a failed send, and Disconnect no longer hangs.
+- Reading continues after serial errors instead of stopping until the board is replugged
+- Larger receive buffer, long replies kept, and stray bytes no longer corrupt the next reply
+- Read-only commands retry once; board errors are reported immediately; Disconnect no longer hangs
 
 </details>
+
+---
+
+<p align="center">
+  <sub>© 2026 narl3yyy-svg · Released under the <a href="LICENSE">MIT License</a> · Not affiliated with RFDesign, Espressif, ExpressLRS or ArduPilot</sub>
+</p>
