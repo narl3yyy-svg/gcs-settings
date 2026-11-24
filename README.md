@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.svg" alt="GCS Settings: browser ground station for RFD900 radios and the ESP32 ground station" width="100%">
+  <img src="banner.svg" alt="GCS Settings: browser ground station for RFD900 radios and the ESP32 ground station" width="100%">
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@ Each page is a **single self-contained HTML file**: no installer, no server, no 
 tracking. Saved locally, it runs entirely offline.
 
 <p align="center">
-  <img src="docs/rfd900-tool.png" alt="The RFD900 tool showing both radios' settings and temperatures" width="900">
+  <img src="rfd900-tool.png" alt="The RFD900 tool showing both radios' settings and temperatures" width="900">
   <br>
   <sub>RFD900 tool, dark theme (sample values from a simulated radio)</sub>
 </p>
