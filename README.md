@@ -1,51 +1,109 @@
-# gcs-settings
+<div align="center">
 
-Browser ground-station page for the RFD900 / ESP32 ground station. Live at
-https://narl3yyy-svg.github.io/gcs-settings/ (Chrome or Edge on a PC, Chrome on Android).
+# GCS Settings
+
+**Browser ground station for RFD900 radios and the ESP32 ground station**
+
+Single-file web pages · No install · Works offline · No tracking
+
+[Open the full ground station](https://narl3yyy-svg.github.io/gcs-settings/) ·
+[Open the RFD900 tool](https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html) ·
+[License](LICENSE)
+
+</div>
+
+---
+
+## Contents
+
+- [Pages](#pages)
+- [Features](#features)
+- [Getting started](#getting-started)
+- [Offline use and privacy](#offline-use-and-privacy)
+- [Dependencies](#dependencies)
+- [Licensing](#licensing)
+- [Changelog](#changelog)
 
 ## Pages
 
-- `index.html`: the full ground station (Status, Air, ELRS, Ground station with map, RFD900, About).
-  **Personal / non-commercial use:** its map uses Esri basemaps under Esri's terms (see
-  [Map data](#map-data)), so this page is not sold.
-- `indexRFD.html`: only the RFD900 tools: Load/Save settings for both radios, RFD900
-  temperatures, AT console and command reference. No third-party code, no map content, works
-  offline. **This is the commercial product.** Live at
-  https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html.
+| Page | What it is | Use |
+|---|---|---|
+| [`index.html`](https://narl3yyy-svg.github.io/gcs-settings/) | Full ground station: Status, Air, ELRS, Ground station (map, missions, offline maps), RFD900 and About tabs | Personal / non-commercial (its map uses Esri basemaps) |
+| [`indexRFD.html`](https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html) | RFD900 tools only: radio settings, temperatures, AT console, command reference | **Commercial product.** No third-party code, no map content, no internet use |
+
+## Features
+
+| Area | Highlights |
+|---|---|
+| **RFD900 radios** | Load, compare and save settings on the ground and aircraft radios · copy required settings to the aircraft · reset to defaults · read temperatures · AT console with a full SiK command reference |
+| **Connections** | ESP32 ground station (115200 baud) or a plain RFD900 on a USB-serial cable (direct mode, chosen baud) · recovers from serial hiccups · detects unplugging and clears stale readings |
+| **Aircraft (ArduPilot)** | Live telemetry and armed state · flight modes and commands · parameters · missions (click to add waypoints, drag to move, Mission Planner `.waypoints` files) · flight logs |
+| **ELRS and ground station** | Link status · output power · binding phrase and bind · RC rate · ground position for Follow mode · board name and reboot |
+| **Map** | MapLibre viewer with smooth zoom, rotation and tilt · Esri Satellite, Streets and Topographic · ground, aircraft, home, trail and mission overlays |
+| **Offline maps** | Save areas (up to 200 sq mi, zoom 15–19) as files in a folder you choose · stop and resume downloads · show a saved area as the **Offline map** with no internet |
+| **Safety** | Radio commands, power changes and reboots that interrupt RC are blocked while the aircraft is armed and confirmed otherwise |
+
+## Getting started
+
+1. Open a page in **Chrome or Edge** on a PC (or Chrome on Android for the ESP32 over USB).
+2. Plug in the ESP32 ground station or the RFD900's USB cable.
+3. For a plain RFD900, pick its baud rate next to **Connect** (usually 57600).
+4. Press **Connect** and choose the COM port.
+
+> [!TIP]
+> If the COM port does not appear, install the radio cable's USB driver (FTDI or CP210x) and
+> close other programs that use the port, such as Mission Planner.
+
+## Offline use and privacy
+
+- **Private (offline only)** above the map is **on by default**: the map loads nothing from the
+  internet and shows only areas saved in your own folder.
+- To save an area, untick Private, frame the area on the map, then use **Offline maps → Download
+  area**. Saved areas open instantly from disk afterwards.
+- Use **Save this page to the PC** once, then open that copy from disk: everything (radios, map
+  library, saved areas) works with no internet, and no website is contacted.
+- Neither page has accounts, analytics, tracking or advertising. `indexRFD.html` makes no
+  internet requests at all.
+
+> [!NOTE]
+> With Private off, online Esri maps and downloads fetch map squares from Esri. Like any online
+> map, Esri then receives your internet (IP) address and which squares are requested. The page
+> sends no cookies and not its own address.
 
 ## Dependencies
 
-Each page is a single self-contained HTML file. Nothing is installed or built, no server is
-needed, and no scripts, styles or fonts are loaded from the internet.
+Each page is one self-contained HTML file: nothing to install or build, no server, and no
+scripts, styles or fonts loaded from the internet.
 
-### Browser
+<details>
+<summary><b>Browser features</b></summary>
+
+<br>
 
 Chrome or Edge on a PC, or Chrome on Android (USB to the ESP32 only). Firefox and Safari lack
-Web Serial and folder access, so the pages do not work there.
+Web Serial and folder access.
 
-| Browser feature | Used for | `index.html` | `indexRFD.html` |
-|---|---|---|---|
-| Web Serial (`navigator.serial`) | USB connection on a PC (ESP32 or plain RFD900) | ✓ | ✓ |
-| WebUSB (`navigator.usb`) | USB connection to the ESP32 on Android | ✓ | ✓ |
-| File System Access (`showDirectoryPicker`, `showSaveFilePicker`) | Offline maps folder, saving the page | ✓ | |
-| IndexedDB | Remembering which maps folder was used (not the map data) | ✓ | |
-| localStorage | Remembering the chosen map, the map view and Private mode | ✓ | |
-| Streams, TextEncoder, Blob, `fetch` | Serial data, saving tiles and files | ✓ | ✓ |
+| Feature | Used for | `index.html` | `indexRFD.html` |
+|---|---|:---:|:---:|
+| Web Serial | USB connection on a PC | ✓ | ✓ |
+| WebUSB | USB connection to the ESP32 on Android | ✓ | ✓ |
+| File System Access | Offline maps folder, saving the page | ✓ | |
+| IndexedDB | Remembering the maps folder (not the map data) | ✓ | |
+| localStorage | Remembering the chosen map, map view and Private mode | ✓ | |
+| WebGL | Drawing the map | ✓ | |
 
-### Libraries built into `index.html` (map only)
+</details>
 
-The RFD900, Air, ELRS and Ground station code is written directly in the page (including the
-MAVLink parser and the MD5 used for the ELRS binding ID). Only the map uses outside libraries,
-and they are embedded in the file:
+<details>
+<summary><b>Libraries built into <code>index.html</code></b> (map only)</summary>
 
-| Library | Version | License | Used for |
-|---|---|---|---|
-| [MapLibre GL JS](https://maplibre.org) | 5.24.0 | BSD-3-Clause | Map display: smooth zoom, rotation and tilt, markers, trail, mission route |
+<br>
 
-Included inside MapLibre GL JS:
+All other code (radios, MAVLink, ELRS, missions) is written directly in the page.
 
 | Library | Version | License |
 |---|---|---|
+| [MapLibre GL JS](https://maplibre.org) | 5.24.0 | BSD-3-Clause |
 | @mapbox/jsonlint-lines-primitives | 2.0.3 | MIT |
 | @mapbox/point-geometry | 1.1.0 | ISC |
 | @mapbox/tiny-sdf | 2.3.0 | BSD-2-Clause |
@@ -67,224 +125,155 @@ Included inside MapLibre GL JS:
 | tinyqueue | 3.0.0 | ISC |
 
 MapLibre GL JS also contains code from mapbox-gl-js v1.13 (BSD-3-Clause), glfx.js (MIT) and
-d3-color (BSD-3-Clause); these notices are part of its license text in the About tab.
+d3-color (BSD-3-Clause). `indexRFD.html` contains no third-party code.
 
-`indexRFD.html` contains no third-party code.
+</details>
 
-### Online services (optional)
+<details>
+<summary><b>Online services</b> (optional)</summary>
+
+<br>
 
 | Service | Contacted when | Without internet |
 |---|---|---|
-| Esri ArcGIS Online basemaps (`server.arcgisonline.com`) | Map in `index.html` (Satellite, Streets, Topographic), and "Download area" | Use saved areas (Private mode) |
-| GitHub Pages | Opening the live site | Open a saved copy of the page |
-| ardupilot.org | Only when a parameter name is clicked, to open its documentation | Not needed |
+| Esri ArcGIS Online (`server.arcgisonline.com`) | Online map with Private off, and "Download area" | Saved areas (Private mode) |
+| GitHub Pages | Opening the live site | A saved copy of the page |
+| ardupilot.org | Only when a parameter name is clicked | Not needed |
 
-Neither page sends analytics or tracking data.
+</details>
 
-### Hardware and firmware
+<details>
+<summary><b>Hardware and firmware</b></summary>
+
+<br>
 
 | Item | Needed for |
 |---|---|
-| RFD900 radios with SiK firmware | Radio settings, temperatures, AT console (standard `AT`/`RT` commands) |
-| ESP32 ground station firmware | ELRS, bind, GPS, ground-station status and RC. Not needed for a plain RFD900. |
+| RFD900 radios with SiK firmware | Radio settings, temperatures, AT console |
+| ESP32 ground station firmware | ELRS, bind, GPS, ground-station status and RC (not needed for a plain RFD900) |
 | FTDI or CP210x USB driver (Windows) | A plain RFD900 on a USB-serial cable |
-| ArduPilot autopilot | Air, Mission and parameter features, and the armed check (MAVLink) |
+| ArduPilot autopilot | Air, Mission and parameter features, and the armed check |
+
+</details>
 
 ## Licensing
 
-### Third-party software
+| Part | License | Notes |
+|---|---|---|
+| This project's code (`index.html`, `indexRFD.html`) | **MIT**, © 2026 narl3yyy-svg | Use, copy, change, share and sell freely; keep the copyright notice and license text. No warranty. See [`LICENSE`](LICENSE). |
+| Embedded libraries (MapLibre GL JS and its parts) | BSD-2-Clause, BSD-3-Clause, MIT, ISC | Commercial use allowed. Their notices and full license texts are in the **About** tab and must stay with any copy. |
+| Map content (Esri Satellite, Streets, Topographic) | Esri terms of use | **Personal / non-commercial use only**; not part of the commercial product. Users are responsible for following Esri's terms, including for saved areas. |
 
-All embedded libraries are under permissive licenses (BSD-2-Clause, BSD-3-Clause, MIT, ISC)
-that allow commercial use, modification and closed-source distribution, provided their copyright
-notices and license texts are kept with the software. `index.html` includes them in its
-**About** tab (component list, copyright lines and full license texts), which must stay in any
-copy that is sold or distributed. The BSD-3-Clause licenses also forbid using their authors'
-names to endorse or promote this product.
+> [!IMPORTANT]
+> The commercial product is **`indexRFD.html`**. It contains no map content and no third-party
+> code, so the Esri terms above do not apply to it.
 
-### Map data
+<details>
+<summary><b>Map credits</b></summary>
 
-- **Esri basemaps** (map in `index.html`, online and saved): World Imagery (Imagery © Esri, Maxar,
-  Earthstar Geographics, and the GIS User Community), World Street Map and World Topographic Map
-  (© Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS User Community). Used under
-  Esri's terms of use. Those terms do not allow commercial use without an Esri license and limit
-  keeping tiles offline, so the map feature is for **personal / non-commercial use only** and is
-  **not part of the commercial product**. Users are responsible for complying with Esri's terms,
-  including for areas saved with "Download area". The map shows Esri's credit lines.
-- **Commercial product:** `indexRFD.html` contains no map content and no third-party code, so
-  none of the above applies to it.
-- **Earlier map sources** (USGS, NAIP, OpenAerialMap, `.pmtiles` street maps) are no longer used. Areas saved from them
-  are public domain or CC BY 4.0 and can be kept.
+<br>
 
-### Privacy
+- **Esri World Imagery:** Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community.
+- **Esri World Street Map and World Topographic Map:** © Esri, HERE, Garmin, © OpenStreetMap
+  contributors, and the GIS User Community.
+- **Earlier sources** (USGS, NAIP, OpenAerialMap, `.pmtiles` street maps) are no longer used.
+  Areas saved from them are public domain or CC BY 4.0 and can be kept.
 
-- Neither page has accounts, analytics, tracking or advertising, or sends data about you, your
-  aircraft or your radios anywhere. `indexRFD.html` makes no internet requests at all.
-- `index.html` has **Private (offline only)** above the map, **on by default**: the map then
-  loads nothing from the internet and shows only areas saved in your own folder ("Offline map").
-- With Private off, online Esri maps and "Download area" fetch map squares from Esri. Like any
-  online map, Esri then receives the computer's internet (IP) address and which squares are
-  requested, which reveals the area being viewed. The page sends no cookies and not its own
-  address (`<meta name="referrer" content="no-referrer">`, `credentials: 'omit'`).
-- Saved areas, settings and missions stay on the PC; the browser remembers only the maps folder
-  and a few page settings. Opening the page from GitHub Pages lets GitHub see that it was
-  loaded; a copy saved with "Save this page to the PC" and opened from disk avoids that.
+</details>
 
-### Trademarks
+<details>
+<summary><b>Trademarks</b></summary>
+
+<br>
 
 RFD900 is a trademark of RFDesign, ESP32 of Espressif Systems; ExpressLRS, ArduPilot and MAVLink
 are names of their respective projects. They are used only to describe compatibility. This
 product is not affiliated with or endorsed by them.
 
-### This project's own code
+</details>
 
-The code written for this project (`index.html` and `indexRFD.html`, apart from the embedded
-third-party libraries above) is released under the **MIT License**, copyright (c) 2026
-narl3yyy-svg. See [`LICENSE`](LICENSE).
+## Changelog
 
-In short: anyone may use, copy, change, share and sell it, as long as the copyright notice and
-license text stay with it (credit to narl3yyy-svg). It comes with no warranty.
+<details open>
+<summary><b>2026-11-24</b> · Private mode, Offline map, Esri maps, layout</summary>
 
-## Changes
+<br>
 
-### 2026-11-24: Private mode, offline map choice, street map files removed, ELRS power
+- **Private (offline only)** above the map, on by default: no map requests at all. Unticking it
+  asks first. No cookies or page address are sent with map requests.
+- The map chooser's **Offline map: &lt;name&gt;** shows the saved area from disk; **Show on map**
+  selects it automatically.
+- **Esri** Satellite (to about zoom 19), Streets and Topographic are back; downloads save the chosen
+  map to zoom 15–19, 8 tiles at a time.
+- **Stop** in "Download area" stops at once; requests time out after 20 s; resume by downloading
+  again with the same name.
+- **ELRS output power:** "Match handset power" removed; the list shows the levels the board reports
+  (+10 dBm and +13 dBm). Finer 1 dBm steps would need an ESP32 firmware change.
+- Ground station tab: the RC rate, ground position and board tiles now sit below Mission.
+- Removed: `.pmtiles` street maps (with PMTiles, @protomaps/basemaps and the label font), USGS,
+  NAIP and OpenAerialMap imagery.
+- Map viewer switched from Leaflet to **MapLibre GL JS** (smooth zoom, rotation, tilt).
 
-- **Private (offline only)** above the map, on by default: no map requests at all; only saved
-  areas are shown. Unticking it asks first and explains what Esri can see. "Download area" works
-  only with Private off. No cookies or page address are sent with map requests.
-- The base-map chooser's last entry is now **Offline map: <name>**: the saved area shown with
-  "Show on map", read from the maps folder (choosing it switches the online maps off). "Show on
-  map" selects it automatically.
-- **Removed:** `.pmtiles` street map files, with PMTiles, @protomaps/basemaps and the built-in
-  label font (about 290 KB smaller). The About tab, README and `LICENSE` list what remains.
-- **ELRS output power:** "Match handset power" removed. The list shows the power levels the board
-  reports (+10 dBm / 10 mW and +13 dBm / 20 mW on this board). Finer 1 dBm steps would need a
-  firmware change on the ESP32.
-- Privacy section added to the About tab and this README.
+</details>
 
-### 2026-11-24: Esri maps back (index.html for non-commercial use)
+<details>
+<summary><b>2026-11-23</b> · Licenses and the RFD900 page</summary>
 
-- The map in `index.html` uses **Esri** again: Satellite (sharp to about zoom 19, worldwide),
-  Streets and Topographic, chosen at the top right of the map, in the MapLibre viewer (smooth
-  zoom, rotation and tilt).
-- "Download area" saves the chosen Esri map down to a chosen closest zoom (15–19), 8 tiles at a
-  time; Stop and resume work as before.
-- Because Esri's terms do not allow commercial use without a license, `index.html` and its map
-  feature are for personal / non-commercial use. The product for sale is `indexRFD.html`, which
-  has no map content. The About tab, this README and `LICENSE` say so.
-- USGS imagery removed.
+<br>
 
-### 2026-11-24: Stop button fixed; high-detail NAIP option removed
+- **About** tab with every embedded component's copyright and full license text, map credits and
+  a trademark notice.
+- New **`indexRFD.html`**: the RFD900 tools plus a Temperatures card, with the aircraft's armed
+  state shown and radio commands blocked while armed.
+- Temperature readings clear when the device disconnects.
 
-- **Stop** in "Download area" now stops at once: requests still waiting on the map server are
-  cancelled, and any request that gets no answer within 20 s is given up and retried later.
-  Download again with the same name to resume.
-- The short-lived "High detail (NAIP)" download option was removed (too slow). Saved areas use
-  USGS imagery only.
+</details>
 
-### 2026-11-24: MapLibre map, USGS imagery only
+<details>
+<summary><b>2026-11-20</b> · Unplug detection</summary>
 
-- **Map viewer switched from Leaflet to MapLibre GL JS:** smooth zooming, rotation and tilt
-  (right-drag or Ctrl-drag; the compass resets north), a scale bar, and fast drawing of
-  `.pmtiles` street maps. Markers, aircraft trail, ground-to-aircraft line, mission waypoints
-  (click to add, drag to move), saved offline areas and "Download area" all work as before.
-- **Satellite map:** USGS National Map imagery only (public domain, United States, about 2 m per
-  pixel, enlarged past zoom 16). The base map chooser (top right) switches between Satellite and
-  an open offline street map.
-- **Street map labels work offline:** Noto Sans label glyphs (Latin characters) are built in.
-- **Removed:** OpenAerialMap, the NAIP layer, the Topographic layer, Leaflet and
-  protomaps-leaflet. The About tab and this README list the new components and their licenses.
-- `index.html` is now about 1.6 MB (MapLibre is larger than Leaflet).
+<br>
 
-### 2026-11-23: USGS maps, licenses, RFD-only page
+- Pulling the USB cable switches the page to **Not connected** within a couple of seconds (closing
+  an unplugged port used to hang).
+- Disconnecting empties both radio columns, so stale settings are never shown; a running radio
+  command ends at once.
 
-- **Maps switched to the USGS National Map** (public domain, United States only) instead of Esri:
-  Satellite (USGS imagery) and Topographic (USGS Topo). The USGS tile cache stops at zoom 16
-  (about 2 m per pixel); closer zooms enlarge those tiles. "Download area" saves USGS tiles, with
-  closest-zoom choices 13–16. Areas saved earlier from Esri still open.
-- **About tab** listing every open-source component inside the page (Leaflet, PMTiles,
-  protomaps-leaflet and the libraries they include) with its copyright and full license text, plus
-  map-data credits (USGS, OpenStreetMap) and a trademark notice.
-- **New `indexRFD.html`** with just the RFD900 tab and a Temperatures card (reads both radios'
-  temperature). It shows the aircraft's armed state and mode from its heartbeat, and blocks radio
-  commands while the aircraft is armed, as the full page does.
-- RFD900 temperature readings are cleared when the device disconnects, like the radio settings.
+</details>
 
-### 2026-11-20: Unplugging is detected
+<details>
+<summary><b>2026-11-07</b> · Offline maps</summary>
 
-- Pulling the USB cable now switches the page to **Not connected** within a couple of seconds,
-  for both the ESP32 ground station and a plain RFD900. Before, the page could keep showing
-  "Connected" because closing an unplugged port could hang.
-- When the device disconnects (unplugged or Disconnect pressed), the RFD900 tab empties both the
-  Ground radio and Aircraft radio columns, the same as after a page refresh, so old settings are
-  never shown for a radio that is not connected. A radio command that was running ends with
-  "the device was disconnected" instead of waiting to time out.
+<br>
 
-### 2026-11-07: Offline maps
+- **Offline maps** section: choose a maps folder, save the area on screen (up to 200 sq mi) with a
+  size estimate, progress and resume, and show saved areas with no internet.
+- The map library is built into the page, and **Save this page to the PC** makes a copy that runs
+  fully offline.
 
-A new **Offline maps** section on the Ground station tab (just above the NMEA console) lets the
-map work with no internet. Map data is saved as files in a folder you choose on the PC or a USB
-drive, never inside the browser.
+</details>
 
-- **Maps folder:** pick any folder. Each saved area is a subfolder holding the map tiles
-  (`<zoom>/<x>/<y>.jpg`) and an `area.json` that describes it. Chrome remembers only which folder
-  was used; after a restart press **Reconnect folder** to allow access again.
-- **Save the area on screen:** pan and zoom the map to the area, give it a name, pick the map
-  (Satellite, Streets or Topographic) and the closest zoom (15–19). The page shows the area in
-  sq mi, the tile count and the approximate size before downloading, and asks for confirmation.
-  Areas are limited to 200 sq mi each. A progress bar and a Stop button are shown; downloading
-  again with the same name resumes and skips tiles already saved.
-- **Saved areas:** lists every area in the folder. **Show on map** loads one (switch between them
-  any time); **Hide** removes it. Saved areas also appear in the map's layer list.
-- **Street map file (.pmtiles):** opens one vector street map file, which can cover a state or
-  the whole US (about 15–25 GB for the US), read straight from disk. It appears as
-  "Offline street map" in the layer list, with Light, Dark and Grey styles.
-  *How to get a street map file* in the section explains how to cut one out of the free
-  Protomaps / OpenStreetMap build with the `pmtiles` command-line tool.
-- **Page works offline:** the map libraries (Leaflet 1.9.4, PMTiles 4.5.0, protomaps-leaflet
-  5.1.0) are now built into `index.html` instead of loaded from the internet. Press
-  **Save this page to the PC…** once while online, then open the saved file in Chrome or Edge
-  when there is no internet. Radios, saved areas and street map files all work from it.
-- Online maps (Esri Satellite, Streets, Topographic) work as before when there is internet.
-  Saved imagery is © Esri and its providers; save only areas needed for your own flying.
+<details>
+<summary><b>2026-11-06</b> · Direct RFD900 mode</summary>
 
-### 2026-11-06: Direct RFD900 mode
+<br>
 
-- The Connect picker lists every COM port, not only ESP32 boards.
-- A plain RFD900 on a USB-serial cable (no ESP32) is detected automatically. The page then runs the
-  radio command sessions itself (+++, AT/RT commands, ATO) at the baud rate chosen next to Connect
-  (57600 by default), so Load/Save settings, Read temperatures and the AT console work.
-  ESP32-only features (ELRS, bind, GPS forwarding, board status) need the ESP32.
-- Nothing changes when an ESP32 ground station is connected.
+- The Connect picker lists every COM port.
+- A plain RFD900 is detected automatically; the page runs the radio command sessions itself
+  (`+++`, AT/RT commands, `ATO`) at the chosen baud rate. ESP32-only features need the ESP32.
 
-### 2026-10-19: RFD900 settings and temperature reads fixed
+</details>
 
-**Problem:** "Load settings" and "Read RFD900 temperatures" sometimes failed with
-*Error: no reply from the ground station*, especially after the board had been plugged
-in for a while. Unplugging and replugging the board was the only way to get a reading.
+<details>
+<summary><b>2026-10-19</b> · Reliable RFD900 reads</summary>
 
-**Main cause:** after any small serial error (for example the browser falling behind on
-incoming telemetry while the tab was busy or in the background), the page stopped reading
-from the board for good. Every reply after that was lost until the board was replugged.
+<br>
 
-**Fixes:**
+- Fixed "no reply from the ground station" after a serial hiccup: the page now keeps reading
+  instead of stopping until the board was replugged.
+- 16× larger receive buffer; long replies kept; stray bytes no longer spoil the next reply.
+- Nothing else is sent while the radios are in command mode; read-only commands retry once;
+  board errors show at once.
+- Recovers from a failed send, and Disconnect no longer hangs.
 
-- The page keeps reading after a recoverable serial error instead of stopping. If reading
-  really can't continue, a banner says to press Disconnect, then Connect.
-- The serial receive buffer is 16 times larger (1 MB), so falling behind is less likely.
-- Long replies from the board are kept. Reading both radios' settings returns more than
-  1 KB, and the page used to throw away anything over 800 characters.
-- A stray `#` byte in the telemetry, or one reply that came through cut short, no longer
-  causes the next reply to be lost. If telemetry bytes get mixed into a reply, the page
-  tries again with them removed.
-- Nothing else is sent to the radios while they are in command mode (parameter reads,
-  mission transfers, log downloads and aircraft commands wait until it's finished).
-- Reads (Load settings, Read temperatures, read-only console commands) are tried a second
-  time automatically if the first attempt fails. Writing settings, resetting to defaults
-  and rebooting are never repeated.
-- If the board reports an error during a radio command, it shows right away instead of
-  after a timeout of up to 30 seconds.
-- If sending to the board fails once, the page recovers instead of silently dropping
-  every later command.
-- Disconnect no longer hangs when the board has stopped accepting data, so reconnecting
-  works without reloading the page.
-- Also includes the v1.7 page changes: corrected Air tab layout and removed unused code.
+</details>
