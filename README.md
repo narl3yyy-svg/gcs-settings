@@ -77,6 +77,7 @@ d3-color (BSD-3-Clause); these notices are part of its license text in the About
 | Service | Contacted when | Without internet |
 |---|---|---|
 | USGS The National Map (`basemap.nationalmap.gov`) | Satellite imagery (base map), and "Download area" | Use saved areas or a `.pmtiles` file |
+| USGS NAIP imagery (`imagery.nationalmap.gov`) | Only "Download area" with **High detail** ticked | Use saved areas |
 | GitHub Pages | Opening the live site | Open a saved copy of the page |
 | ardupilot.org | Only when a parameter name is clicked, to open its documentation | Not needed |
 
@@ -111,11 +112,16 @@ names to endorse or promote this product.
   available from U.S. Geological Survey, National Geospatial Program."* Imagery is credited "USDA,
   USGS The National Map". Coverage is the United States only; tiles go to zoom 16 (about 2 m per
   pixel) and are enlarged beyond that.
+- **NAIP aerial imagery** (optional **High detail** in saved areas): National Agriculture Imagery
+  Program, U.S. Department of Agriculture, Farm Service Agency, served by USGS The National Map.
+  Listed as public domain; free to use, including commercially and offline. Credited "USDA NAIP,
+  USGS The National Map". USDA considered moving NAIP to a paid license in 2017–2018; it is still
+  listed as public domain, but check the USDA FSA NAIP page if that changes.
 - **OpenStreetMap** (`.pmtiles` street map files supplied by the user): © OpenStreetMap
   contributors, under the Open Database License (ODbL). Commercial use is allowed with this
   credit, which the map shows.
-- **No longer used:** Esri (until 2026-11-23), USGS NAIP / Topographic and OpenAerialMap (until
-  2026-11-24).
+- **No longer used:** Esri (until 2026-11-23), USGS Topographic and OpenAerialMap (until
+  2026-11-24). NAIP is no longer a live map layer, only the optional High detail download.
   Areas saved from Esri with older versions must be deleted before selling or sharing the
   product: Esri's terms do not allow keeping their tiles offline or commercial use without a paid
   license. Areas saved from USGS NAIP or Topographic are public domain and can be kept.
@@ -136,6 +142,18 @@ In short: anyone may use, copy, change, share and sell it, as long as the copyri
 license text stay with it (credit to narl3yyy-svg). It comes with no warranty.
 
 ## Changes
+
+### 2026-11-24: High-detail offline areas
+
+- "Download area" has a **High detail** option: USDA NAIP aerial photos (about 0.6 m per pixel,
+  roughly 3 times sharper than the USGS map) saved down to zoom 17, 18 or 19 on top of the
+  normal USGS tiles. The live map stays on the fast USGS imagery; NAIP is only fetched while
+  downloading.
+- High detail downloads slowly because the server draws each square (the page shows an
+  estimate, e.g. 200 sq mi to zoom 18 is about 45,000 tiles, about 1.3 GB and a few hours), but
+  only once: the saved area then opens instantly, offline. Stop and resume work as before.
+- Saved areas show the high-detail photos from zoom 17 and enlarge them beyond the deepest
+  saved zoom. Lower 48 states. Credit added to the About tab and README.
 
 ### 2026-11-24: MapLibre map, USGS imagery only
 

@@ -622,6 +622,11 @@ const OM_GLYPHS = {
       <div class="row">
         <label>Name <input id="omName" placeholder="e.g. North field" style="width:170px"></label>
       </div>
+      <div class="row">
+        <label><input id="omHd" type="checkbox"> High detail: add NAIP aerial photos (about 0.6 m per pixel) down to zoom
+          <select id="omHdZoom"><option value="17">17 (about 1 m)</option><option value="18" selected>18 (about 0.5 m)</option><option value="19">19 (sharpest; only sharper where newer photos exist)</option></select></label>
+      </div>
+      <p class="note" style="margin-top:0">High detail downloads slowly (the server draws each square), but only once: the saved area then opens instantly, offline. Lower 48 states.</p>
       <p class="note" id="omEstimate">–</p>
       <div class="row">
         <button id="omDownload" type="button" disabled>Download area…</button>
@@ -1644,6 +1649,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.</pre></details>
     <div class="card mt">
       <h2>Map data</h2>
       <ul class="note">
+        <li><b>High detail (saved areas, optional):</b> National Agriculture Imagery Program (NAIP) aerial photography, U.S. Department of Agriculture, Farm Service Agency, served by USGS The National Map. Listed as public domain; credited “USDA NAIP, USGS The National Map”.</li>
         <li><b>Satellite imagery:</b> USGS The National Map (Imagery: USDA, USGS The National Map). Public domain; credit requested by USGS: <i>“Map services and data available from U.S. Geological Survey, National Geospatial Program.”</i> United States only.</li>
         <li><b>Street map files (.pmtiles):</b> map data © OpenStreetMap contributors, available under the Open Database License (ODbL), <code>openstreetmap.org/copyright</code>. The file is supplied by the user.</li>
       </ul>
@@ -2521,7 +2527,7 @@ function setLine(id, pts) {
   if (src) src.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts.map(ll) } });
 }
 const mapLoaded = () => mapReady ? Promise.resolve() : new Promise(r => map.once('load', r));
-const firstOverlay = () => ['saved', ...MAP_LINES.map(l => l[0])].find(id => map.getLayer(id));
+const firstOverlay = () => ['saved', 'saved-hd', ...MAP_LINES.map(l => l[0])].find(id => map.getLayer(id));
 
 // Satellite base map: USGS National Map imagery (public domain, United States only). Its tile cache
 // stops at zoom 16; MapLibre enlarges the zoom-16 tiles beyond that.
@@ -3696,6 +3702,17 @@ const OM_USGS_URL = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSIm
 const OM_USGS_MAX = 16;
 const OM_CREDIT_USGS = 'Imagery: USDA, USGS The National Map';
 const OM_KB_USGS = 25; // rough average tile size
+// High detail for downloads: USDA NAIP aerial photos (public domain), drawn on request by USGS's WMS server
+const OM_NAIP_WMS = 'https://imagery.nationalmap.gov/arcgis/services/USGSNAIPImagery/ImageServer/WMSServer';
+const OM_CREDIT_NAIP = 'High detail: USDA NAIP, USGS The National Map';
+const OM_KB_NAIP = 30, OM_HD_MIN = OM_USGS_MAX + 1, OM_NAIP_RATE = 4; // tiles a second, roughly
+let omNaipLayer = 'USGSNAIPImagery:NaturalColor';
+function omNaipUrl(z, x, y) { // Web Mercator box of tile z/x/y, asked for as one 256 px image
+  const R = 20037508.342789244, size = 2 * R / 2 ** z, minx = -R + x * size, maxy = R - y * size;
+  return `${OM_NAIP_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${encodeURIComponent(omNaipLayer)}&STYLES=&CRS=EPSG:3857` +
+    `&BBOX=${minx},${maxy - size},${minx + size},${maxy}&WIDTH=256&HEIGHT=256&FORMAT=image/jpeg`;
+}
+const omMins = n => n < 90 ? `${Math.max(1, Math.round(n))} min` : `${(n / 60).toFixed(1)} hours`;
 const omUrl = (t, z, x, y) => t.replace('{z}', z).replace('{x}', x).replace('{y}', y);
 const omCanFs = 'showDirectoryPicker' in window;
 let omDir = null, omJob = null, omAreaName = '', omAreaDir = null, omPmFile = null, omPmProtocol = null;
@@ -3749,11 +3766,14 @@ function omEstimate() {
   if (!map) return;
   const b = map.getBounds(), sq = omSqMi(b);
   const tiles = omRanges(b, OM_USGS_MAX).reduce((t, r) => t + r.count, 0);
+  const hd = $('omHd').checked ? omRanges(b, +$('omHdZoom').value).filter(r => r.z >= OM_HD_MIN).reduce((t, r) => t + r.count, 0) : 0;
   const tooBig = sq > OM_MAX_SQMI;
   $('omEstimate').innerHTML = `On screen: <b class="${tooBig ? 'bad' : ''}">${sq < 10 ? sq.toFixed(1) : Math.round(sq)} sq mi</b> · ${tiles.toLocaleString()} tiles · about ${omSize(tiles * OM_KB_USGS / 1024)}` +
+    (hd ? ` · high detail: ${hd.toLocaleString()} tiles, about ${omSize(hd * OM_KB_NAIP / 1024)}, roughly ${omMins(hd / OM_NAIP_RATE / 60)}` : '') +
     (tooBig ? ` · <span class="bad">zoom in: at most ${OM_MAX_SQMI} sq mi per area</span>` : '');
   $('omDownload').disabled = !omCanFs || !omDir || tooBig || !!omJob;
 }
+$('omHd').onchange = $('omHdZoom').onchange = omEstimate;
 
 // --- maps folder
 function omSetDir(h) {
@@ -3795,7 +3815,7 @@ async function omListAreas() {
   for (const { name, a } of areas) {
     const o = document.createElement('option');
     o.value = name;
-    o.textContent = `${name} — zoom ${a.maxZoom}${a.complete ? '' : ' (incomplete)'}`;
+    o.textContent = `${name} — zoom ${a.hd ? a.hd.maxZoom + ', high detail' : a.maxZoom}${a.complete ? '' : ' (incomplete)'}`;
     sel.appendChild(o);
   }
   if (!areas.length) sel.innerHTML = '<option value="">(no saved areas in this folder yet)</option>';
@@ -3812,30 +3832,39 @@ $('omDownload').onclick = async () => {
   if (!name) { $('omName').focus(); $('omProgress').textContent = 'Give the area a name first.'; return; }
   const b = map.getBounds(), sq = omSqMi(b);
   if (sq > OM_MAX_SQMI) return;
-  const ranges = omRanges(b, OM_USGS_MAX), total = ranges.reduce((t, r) => t + r.count, 0);
+  const ranges = omRanges(b, OM_USGS_MAX), usgsTotal = ranges.reduce((t, r) => t + r.count, 0);
+  const hdMax = $('omHd').checked ? +$('omHdZoom').value : 0;
+  const hdRanges = hdMax ? omRanges(b, hdMax).filter(r => r.z >= OM_HD_MIN) : [];
+  const hdTotal = hdRanges.reduce((t, r) => t + r.count, 0), total = usgsTotal + hdTotal;
   const ok = await ask({ title: `Download “${name}”?`, ok: 'Download',
-    body: `<p>${sq.toFixed(1)} sq mi of USGS satellite imagery, zoom ${OM_MIN_ZOOM}–${OM_USGS_MAX}: <b>${total.toLocaleString()} tiles</b>, about <b>${omSize(total * OM_KB_USGS / 1024)}</b>.</p>
+    body: `<p>${sq.toFixed(1)} sq mi of USGS satellite imagery, zoom ${OM_MIN_ZOOM}–${OM_USGS_MAX}: <b>${usgsTotal.toLocaleString()} tiles</b>, about <b>${omSize(usgsTotal * OM_KB_USGS / 1024)}</b>.</p>
+      ${hdTotal ? `<p><b>High detail</b> (NAIP aerial photos), zoom ${OM_HD_MIN}–${hdMax}: <b>${hdTotal.toLocaleString()} tiles</b>, about <b>${omSize(hdTotal * OM_KB_NAIP / 1024)}</b>; roughly ${omMins(hdTotal / OM_NAIP_RATE / 60)}.</p>` : ''}
       <p>Saved to <b>${omDir.name}\\${name}</b>. Keep this tab open; you can stop and resume later.</p>
-      <p class="quiet">${OM_CREDIT_USGS} (public domain). Covers the United States only.</p>` });
+      <p class="quiet">${OM_CREDIT_USGS}${hdTotal ? '; ' + OM_CREDIT_NAIP : ''} (public domain). Covers the United States only.</p>` });
   if (!ok) return;
   if (!await omPermitted(omDir, true)) { $('omProgress').textContent = 'Permission to write to the folder was refused.'; return; }
 
   const job = omJob = { stop: false };
   $('omCancel').style.display = ''; $('omBar').style.display = ''; omEstimate();
   const areaDir = await omDir.getDirectoryHandle(name, { create: true });
-  const meta = { name, minZoom: OM_MIN_ZOOM, maxZoom: OM_USGS_MAX,
+  const hdDir = hdTotal ? await areaDir.getDirectoryHandle('hd', { create: true }) : null;
+  const meta = { name, minZoom: OM_MIN_ZOOM, maxZoom: OM_USGS_MAX, hd: hdTotal ? { minZoom: OM_HD_MIN, maxZoom: hdMax, tiles: hdTotal } : null,
     bounds: [[b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]], tiles: total, created: new Date().toISOString(), complete: false,
-    credit: OM_CREDIT_USGS };
+    credit: OM_CREDIT_USGS + (hdTotal ? '; ' + OM_CREDIT_NAIP : '') };
   const writeMeta = async () => { const w = await (await areaDir.getFileHandle('area.json', { create: true })).createWritable(); await w.write(JSON.stringify(meta, null, 1)); await w.close(); };
   await writeMeta();
 
   const dirs = new Map();
-  const dirFor = async (z, x) => {
-    const k = z + '/' + x;
-    if (!dirs.has(k)) dirs.set(k, (async () => (await (await areaDir.getDirectoryHandle(String(z), { create: true })).getDirectoryHandle(String(x), { create: true })))());
+  const dirFor = async (root, z, x) => {
+    const k = (root === hdDir ? 'hd/' : '') + z + '/' + x;
+    if (!dirs.has(k)) dirs.set(k, (async () => (await (await root.getDirectoryHandle(String(z), { create: true })).getDirectoryHandle(String(x), { create: true })))());
     return dirs.get(k);
   };
-  function* allTiles() { for (const r of ranges) for (let x = r.x0; x <= r.x1; x++) for (let y = r.y0; y <= r.y1; y++) yield [r.z, x, y]; }
+  function* allTiles() {
+    for (const r of ranges) for (let x = r.x0; x <= r.x1; x++) for (let y = r.y0; y <= r.y1; y++) yield [false, r.z, x, y];
+    for (const r of hdRanges) for (let x = r.x0; x <= r.x1; x++) for (let y = r.y0; y <= r.y1; y++) yield [true, r.z, x, y];
+  }
+  let hdOk = 0, hdBad = 0;
   const it = allTiles();
   let done = 0, saved = 0, skipped = 0, missing = 0, failed = 0, bytes = 0, lastUi = 0;
   const t0 = Date.now();
@@ -3849,21 +3878,23 @@ $('omDownload').onclick = async () => {
       (skipped ? ` · ${skipped.toLocaleString()} already saved` : '') + (missing ? ` · ${missing} without imagery` : '') +
       (failed ? ` · ${failed} failed` : '') + (left !== null && done < total ? ` · about ${left} min left` : '');
   };
-  async function one([z, x, y]) {
-    const d = await dirFor(z, x);
+  async function one([hd, z, x, y]) {
+    const d = await dirFor(hd ? hdDir : areaDir, z, x);
     for (const ext of ['jpg', 'png']) { try { await d.getFileHandle(y + '.' + ext); skipped++; return; } catch (e) {} }
-    const url = omUrl(OM_USGS_URL, z, x, y);
     for (let attempt = 0; attempt < 3 && !job.stop; attempt++) {
+      // If the NAIP server keeps rejecting the layer name, switch to its plain layer "0"
+      if (hd && hdBad >= 6 && !hdOk && omNaipLayer !== '0') omNaipLayer = '0';
+      const url = hd ? omNaipUrl(z, x, y) : omUrl(OM_USGS_URL, z, x, y);
       try {
         const r = await fetch(url);
         if (r.status === 404) { missing++; return; }
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const blob = await r.blob();
-        if (!/^image\//.test(blob.type)) throw new Error('the map server sent an error instead of an image');
+        if (!/^image\//.test(blob.type)) { if (hd) hdBad++; throw new Error('the map server sent an error instead of an image'); }
         const ext = /png/.test(blob.type) ? 'png' : 'jpg';
         const w = await (await d.getFileHandle(y + '.' + ext, { create: true })).createWritable();
         await w.write(blob); await w.close();
-        bytes += blob.size; saved++;
+        bytes += blob.size; saved++; if (hd) hdOk++;
         return;
       } catch (e) {
         if (attempt === 2) { failed++; job.lastError = e.message; return; }
@@ -3896,20 +3927,23 @@ $('omCancel').onclick = () => { if (omJob) omJob.stop = true; };
 // --- show a saved area: MapLibre asks for omfs://... tiles, read here from the area's folder
 const OM_CLEAR_PNG = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='), c => c.charCodeAt(0));
 async function omSavedTile(params) {
-  const m = params.url.match(/\/(\d+)\/(\d+)\/(\d+)$/);
+  const m = params.url.match(/\/(base|hd)\/(\d+)\/(\d+)\/(\d+)$/);
   if (m && omAreaDir) {
     try {
-      const d = await (await omAreaDir.getDirectoryHandle(m[1])).getDirectoryHandle(m[2]);
+      const root = m[1] === 'hd' ? await omAreaDir.getDirectoryHandle('hd') : omAreaDir;
+      const d = await (await root.getDirectoryHandle(m[2])).getDirectoryHandle(m[3]);
       for (const ext of ['jpg', 'png']) {
-        try { return { data: await (await (await d.getFileHandle(m[3] + '.' + ext)).getFile()).arrayBuffer() }; } catch (e) {}
+        try { return { data: await (await (await d.getFileHandle(m[4] + '.' + ext)).getFile()).arrayBuffer() }; } catch (e) {}
       }
     } catch (e) {}
   }
   return { data: OM_CLEAR_PNG.slice().buffer }; // not saved: transparent
 }
 function omRemoveArea() {
-  if (map && map.getLayer('saved')) map.removeLayer('saved');
-  if (map && map.getSource('saved')) map.removeSource('saved');
+  for (const id of ['saved-hd', 'saved']) {
+    if (map && map.getLayer(id)) map.removeLayer(id);
+    if (map && map.getSource(id)) map.removeSource(id);
+  }
   omAreaDir = null; omAreaName = '';
   $('omHide').disabled = true;
 }
@@ -3922,13 +3956,18 @@ $('omShow').onclick = async () => {
   omRemoveArea();
   omAreaDir = dirH; omAreaName = name;
   const [[s, w], [n, e]] = a.bounds;
-  map.addSource('saved', { type: 'raster', tiles: [`omfs://${encodeURIComponent(name)}-${Date.now()}/{z}/{x}/{y}`], tileSize: 256,
+  const key = encodeURIComponent(name) + '-' + Date.now(), before = MAP_LINES.map(l => l[0]).find(id => map.getLayer(id));
+  map.addSource('saved', { type: 'raster', tiles: [`omfs://${key}/base/{z}/{x}/{y}`], tileSize: 256,
     minzoom: a.minZoom, maxzoom: a.maxZoom, bounds: [w, s, e, n], attribution: 'Saved: ' + (a.credit || 'map imagery') });
-  map.addLayer({ id: 'saved', type: 'raster', source: 'saved' }, MAP_LINES.map(l => l[0]).find(id => map.getLayer(id)));
+  map.addLayer({ id: 'saved', type: 'raster', source: 'saved' }, before);
+  if (a.hd) { // high detail drawn over the base from zoom 17, enlarged beyond its deepest saved zoom
+    map.addSource('saved-hd', { type: 'raster', tiles: [`omfs://${key}/hd/{z}/{x}/{y}`], tileSize: 256, minzoom: a.hd.minZoom, maxzoom: a.hd.maxZoom, bounds: [w, s, e, n] });
+    map.addLayer({ id: 'saved-hd', type: 'raster', source: 'saved-hd', minzoom: a.hd.minZoom - 0.5 }, before);
+  }
   $('omHide').disabled = false;
   $('mFollow').checked = false;
   map.fitBounds([[w, s], [e, n]], { padding: 20 });
-  $('omAreaInfo').textContent = `Showing “${name}”: zoom ${a.minZoom}–${a.maxZoom}` +
+  $('omAreaInfo').textContent = `Showing “${name}”: zoom ${a.minZoom}–${a.hd ? a.hd.maxZoom + ' (high detail from ' + a.hd.minZoom + ')' : a.maxZoom}` +
     (a.bytes ? `, ${omSize(a.bytes / 1048576)}` : '') + (a.complete ? '' : ' (incomplete: download it again to finish)') + '.';
 };
 $('omHide').onclick = () => { omRemoveArea(); $('omAreaInfo').textContent = ''; };
