@@ -23,9 +23,11 @@ SOFTWARE.
 -------------------------------------------------------------------------------
 Third-party components
 
-index.html embeds open-source map libraries (Leaflet, PMTiles, protomaps-leaflet
-and the libraries they include). They are not covered by the license above:
-each stays under its own license (BSD-2-Clause, BSD-3-Clause, MIT or ISC).
+index.html embeds open-source map components (MapLibre GL JS, PMTiles,
+@protomaps/basemaps, the libraries they include, and Noto Sans label glyphs).
+They are not covered by the license above: each stays under its own license
+(BSD-2-Clause, BSD-3-Clause, MIT, ISC, or the SIL Open Font License 1.1 for the
+font glyphs).
 Their copyright notices and full license texts are in the About tab of
 index.html and are listed in README.md. indexRFD.html contains no third-party
 code.

@@ -37,26 +37,38 @@ and they are embedded in the file:
 
 | Library | Version | License | Used for |
 |---|---|---|---|
-| [Leaflet](https://leafletjs.com) | 1.9.4 | BSD-2-Clause | Map, markers, trail, mission waypoints |
-| [PMTiles](https://github.com/protomaps/PMTiles) | 4.5.0 | BSD-3-Clause | Reading offline `.pmtiles` street map files |
-| [protomaps-leaflet](https://github.com/protomaps/protomaps-leaflet) | 5.1.0 | BSD-3-Clause | Drawing `.pmtiles` street maps |
+| [MapLibre GL JS](https://maplibre.org) | 5.24.0 | BSD-3-Clause | Map display: smooth zoom, rotation and tilt, markers, trail, mission route |
+| [PMTiles](https://github.com/protomaps/PMTiles) | 4.5.0 | BSD-3-Clause | Reading offline `.pmtiles` street map files from disk |
+| [@protomaps/basemaps](https://github.com/protomaps/basemaps) | 5.7.2 | BSD-3-Clause | Street map style (Light, Dark, Grey) |
+| Noto Sans label glyphs (via smp-noto-glyphs 2.0.0) | — | SIL Open Font License 1.1 (font); MIT (packaging) | Street-map labels without internet (Latin characters) |
 
-Included inside protomaps-leaflet and PMTiles:
+Included inside MapLibre GL JS and PMTiles:
 
 | Library | Version | License |
 |---|---|---|
-| @protomaps/basemaps | 5.7.2 | BSD-3-Clause |
-| PMTiles (older copy) | 3.2.1 | BSD-3-Clause |
-| @mapbox/vector-tile | 2.0.5 | BSD-3-Clause |
-| pbf | 4.0.2 | BSD-3-Clause |
+| @mapbox/jsonlint-lines-primitives | 2.0.3 | MIT |
 | @mapbox/point-geometry | 1.1.0 | ISC |
-| potpack | 1.0.2 | ISC |
-| quickselect | 2.0.0 | ISC |
-| rbush | 3.0.1 | MIT |
-| fflate | 0.8.3 | MIT |
-| color2k | 2.0.4 | MIT |
-| protocol-buffers-schema | 3.6.1 | MIT |
-| resolve-protobuf-schema | 2.1.0 | MIT |
+| @mapbox/tiny-sdf | 2.3.0 | BSD-2-Clause |
+| @mapbox/unitbezier | 0.0.1 | BSD-2-Clause |
+| @mapbox/vector-tile | 2.0.5 | BSD-3-Clause |
+| @mapbox/whoots-js | 3.1.0 | ISC |
+| @maplibre/geojson-vt | 6.3.3 | ISC |
+| @maplibre/maplibre-gl-style-spec | 24.10.0 | ISC |
+| @maplibre/mlt | 1.3.0 | MIT (dual MIT / Apache-2.0) |
+| @maplibre/vt-pbf | 4.3.3 | MIT |
+| earcut | 3.2.4 | ISC |
+| gl-matrix | 3.4.4 | MIT |
+| json-stringify-pretty-compact | 4.0.0 | MIT |
+| kdbush | 4.1.0 | ISC |
+| murmurhash-js | 1.0.0 | MIT |
+| pbf | 4.0.2 | BSD-3-Clause |
+| potpack | 2.1.0 | ISC |
+| quickselect | 3.0.0 | ISC |
+| tinyqueue | 3.0.0 | ISC |
+| fflate (inside PMTiles) | 0.8.3 | MIT |
+
+MapLibre GL JS also contains code from mapbox-gl-js v1.13 (BSD-3-Clause), glfx.js (MIT) and
+d3-color (BSD-3-Clause); these notices are part of its license text in the About tab.
 
 `indexRFD.html` contains no third-party code.
 
@@ -65,7 +77,6 @@ Included inside protomaps-leaflet and PMTiles:
 | Service | Contacted when | Without internet |
 |---|---|---|
 | USGS The National Map (`basemap.nationalmap.gov`) | Satellite imagery (base map), and "Download area" | Use saved areas or a `.pmtiles` file |
-| OpenAerialMap (`global.imagery.hotosm.org`) | Detail imagery from zoom 14 where available, and "Download area" with detail | Use saved areas |
 | GitHub Pages | Opening the live site | Open a saved copy of the page |
 | ardupilot.org | Only when a parameter name is clicked, to open its documentation | Not needed |
 
@@ -86,7 +97,9 @@ Neither page sends analytics or tracking data.
 
 All embedded libraries are under permissive licenses (BSD-2-Clause, BSD-3-Clause, MIT, ISC)
 that allow commercial use, modification and closed-source distribution, provided their copyright
-notices and license texts are kept with the software. `index.html` includes them in its
+notices and license texts are kept with the software. The embedded Noto Sans label glyphs are
+under the SIL Open Font License 1.1, which allows them to be bundled with and sold as part of
+software; the font may not be sold on its own, and its license text must be included. `index.html` includes them in its
 **About** tab (component list, copyright lines and full license texts), which must stay in any
 copy that is sold or distributed. The BSD-3-Clause licenses also forbid using their authors'
 names to endorse or promote this product.
@@ -98,18 +111,11 @@ names to endorse or promote this product.
   available from U.S. Geological Survey, National Geospatial Program."* Imagery is credited "USDA,
   USGS The National Map". Coverage is the United States only; tiles go to zoom 16 (about 2 m per
   pixel) and are enlarged beyond that.
-- **OpenAerialMap** (detail imagery from zoom 14, online and saved): © OpenAerialMap contributors,
-  licensed under Creative Commons Attribution 4.0 International (CC BY 4.0,
-  https://creativecommons.org/licenses/by/4.0/). Commercial use, offline copies and resale are
-  allowed as long as the credit and license link are shown, which the map, saved areas and the
-  About tab do. Imagery is shown unmodified. Coverage is wherever contributors have uploaded
-  imagery (often drone or aerial surveys, a few cm to 1 m per pixel), so many areas have none.
-  OpenAerialMap asks heavy users of its tile service to contact them; a commercial product with
-  many users should do so.
 - **OpenStreetMap** (`.pmtiles` street map files supplied by the user): © OpenStreetMap
   contributors, under the Open Database License (ODbL). Commercial use is allowed with this
   credit, which the map shows.
-- **No longer used:** Esri (until 2026-11-23) and USGS NAIP / Topographic (until 2026-11-24).
+- **No longer used:** Esri (until 2026-11-23), USGS NAIP / Topographic and OpenAerialMap (until
+  2026-11-24).
   Areas saved from Esri with older versions must be deleted before selling or sharing the
   product: Esri's terms do not allow keeping their tiles offline or commercial use without a paid
   license. Areas saved from USGS NAIP or Topographic are public domain and can be kept.
@@ -131,17 +137,19 @@ license text stay with it (credit to narl3yyy-svg). It comes with no warranty.
 
 ## Changes
 
-### 2026-11-24: USGS + OpenAerialMap satellite map
+### 2026-11-24: MapLibre map, USGS imagery only
 
-- One satellite map: **USGS imagery** everywhere in the US (fast, about 2 m per pixel, enlarged
-  past zoom 16) with **OpenAerialMap detail** drawn on top from zoom 14 wherever someone has mapped
-  the area (often much sharper). Both are free for commercial use (public domain and CC BY 4.0).
-- Layer list (top right): Satellite, "OpenAerialMap detail (zoom 14+)" (on), and
-  "OpenAerialMap coverage (zoomed out)" (off; shows where detail exists).
-- "Download area" always saves USGS zoom 8–16 and, if ticked, OpenAerialMap detail down to a
-  chosen zoom (17–20). It checks each zoom-14 square first and only downloads deeper where
-  imagery exists. Saved areas show both, offline.
-- Removed: the slow NAIP layer, the Topographic layer and the old Esri code.
+- **Map viewer switched from Leaflet to MapLibre GL JS:** smooth zooming, rotation and tilt
+  (right-drag or Ctrl-drag; the compass resets north), a scale bar, and fast drawing of
+  `.pmtiles` street maps. Markers, aircraft trail, ground-to-aircraft line, mission waypoints
+  (click to add, drag to move), saved offline areas and "Download area" all work as before.
+- **Satellite map:** USGS National Map imagery only (public domain, United States, about 2 m per
+  pixel, enlarged past zoom 16). The base map chooser (top right) switches between Satellite and
+  an open offline street map.
+- **Street map labels work offline:** Noto Sans label glyphs (Latin characters) are built in.
+- **Removed:** OpenAerialMap, the NAIP layer, the Topographic layer, Leaflet and
+  protomaps-leaflet. The About tab and this README list the new components and their licenses.
+- `index.html` is now about 1.6 MB (MapLibre is larger than Leaflet).
 
 ### 2026-11-23: USGS maps, licenses, RFD-only page
 
