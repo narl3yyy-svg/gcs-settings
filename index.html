@@ -1155,7 +1155,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <button id="btnClearTrail" class="ghost small">Clear trail</button>
       </div>
       <div id="map"></div>
-      <p class="note" id="mapNote">Online maps come from the USGS National Map (United States only, public domain; switch layers at top right) and need an internet connection. For flying without internet, use Offline maps below.</p>
+      <p class="note" id="mapNote">Satellite imagery from the USGS National Map (United States, public domain), with sharper OpenAerialMap detail (CC BY 4.0) from zoom 14 wherever someone has mapped the area. Needs an internet connection. For flying without internet, use Offline maps below.</p>
     </div>
 
     <div class="card mt">
@@ -1219,12 +1219,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
 
       <h3 class="omh">2. Save the area on screen</h3>
-      <p class="note" style="margin-top:0">Pan and zoom the map so it shows the area you want (at most 200 sq mi), then download. USGS maps cover the United States only. Satellite (NAIP, detailed) goes to zoom 18 (about 0.6 m per pixel); Satellite and Topographic stop at zoom 16 (about 2 m). A download that stops can be resumed: download again with the same name and the tiles already saved are skipped.</p>
+      <p class="note" style="margin-top:0">Pan and zoom the map so it shows the area you want (at most 200 sq mi), then download. USGS imagery (United States, to zoom 16, about 2 m per pixel) is always saved; OpenAerialMap detail is added for the parts someone has mapped. A download that stops can be resumed: download again with the same name and the tiles already saved are skipped.</p>
       <div class="row">
         <label>Name <input id="omName" placeholder="e.g. North field" style="width:170px"></label>
-        <label>Map <select id="omLayer"><option value="NAIP">Satellite (NAIP, detailed)</option><option>Satellite</option><option>Topographic</option></select></label>
-        <label>Closest zoom <select id="omZoom">
-</select></label>
+        <label><input id="omOam" type="checkbox" checked> Add OpenAerialMap detail where it exists, down to zoom
+          <select id="omOamZoom"><option value="17">17 (about 1 m)</option><option value="18" selected>18 (about 0.5 m)</option><option value="19">19 (about 0.25 m)</option><option value="20">20 (about 0.12 m)</option></select></label>
       </div>
       <p class="note" id="omEstimate">–</p>
       <div class="row">
@@ -1388,8 +1387,8 @@ THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRES
     <div class="card mt">
       <h2>Map data</h2>
       <ul class="note">
-        <li><b>Satellite (NAIP, detailed):</b> National Agriculture Imagery Program (NAIP) aerial photography, U.S. Department of Agriculture, Farm Service Agency, served by USGS The National Map. Public domain.</li>
-        <li><b>Satellite and Topographic:</b> USGS The National Map (Imagery: USDA, USGS The National Map; Topographic: USGS The National Map). Public domain; credit requested by USGS: <i>“Map services and data available from U.S. Geological Survey, National Geospatial Program.”</i></li>
+        <li><b>Satellite imagery:</b> USGS The National Map (Imagery: USDA, USGS The National Map). Public domain; credit requested by USGS: <i>“Map services and data available from U.S. Geological Survey, National Geospatial Program.”</i> United States only.</li>
+        <li><b>Detail imagery:</b> © OpenAerialMap contributors, licensed under Creative Commons Attribution 4.0 International (CC BY 4.0), <code>creativecommons.org/licenses/by/4.0</code>. Shown unmodified from the OpenAerialMap global tile service (<code>global.imagery.hotosm.org</code>); commercial use is allowed with this credit.</li>
         <li><b>Street map files (.pmtiles):</b> map data © OpenStreetMap contributors, available under the Open Database License (ODbL), <code>openstreetmap.org/copyright</code>. The file is supplied by the user.</li>
       </ul>
     </div>
@@ -2262,44 +2261,31 @@ function initMap() {
   try { view = JSON.parse(localStorage.getItem('gcsMapView')); } catch (e) {}
   map = L.map('map', { zoomControl: true }).setView(view && view.c ? view.c : [39.5, -98.35], view && view.z ? view.z : 4);
   map.on('moveend', () => { try { localStorage.setItem('gcsMapView', JSON.stringify({ c: [map.getCenter().lat, map.getCenter().lng], z: map.getZoom() })); } catch (e) {} });
-  // USGS National Map: public domain, United States only. Its tile cache stops at zoom 16, so
-  // closer zooms enlarge the zoom-16 tiles instead of asking the server for tiles it doesn't have.
-  const layers = {
-    // NAIP aerial photos (USDA, public domain), drawn on request at full detail by USGS's WMS server
-    'Satellite (NAIP, detailed)': L.tileLayer.wms(OM_NAIP_WMS, { layers: omNaipLayer, format: 'image/jpeg', version: '1.3.0',
-      maxNativeZoom: OM_MAX_ZOOM.NAIP, maxZoom: 20, attribution: OM_CREDIT.NAIP }),
-    'Satellite': L.tileLayer(omTileUrl('Satellite'), { maxNativeZoom: OM_NATIVE_MAX, maxZoom: 20, attribution: OM_CREDIT.Satellite }),
-    'Topographic': L.tileLayer(omTileUrl('Topographic'), { maxNativeZoom: OM_NATIVE_MAX, maxZoom: 20, attribution: OM_CREDIT.Topographic })
-  };
-  let chosen = 'Satellite (NAIP, detailed)';
-  try { chosen = localStorage.getItem('gcsMapLayer2') || chosen; } catch (e) {} // new key: everyone starts on NAIP once
-  (layers[chosen] || layers['Satellite (NAIP, detailed)']).addTo(map);
-  // If the NAIP server rejects the layer name, try its plain layer "0" before giving up
-  const naip = layers['Satellite (NAIP, detailed)'];
-  let naipOk = 0, naipBad = 0;
-  naip.on('tileload', () => naipOk++);
-  naip.on('tileerror', () => { if (++naipBad === 6 && !naipOk && omNaipLayer !== '0') { omNaipLayer = '0'; naip.setParams({ layers: '0' }); } });
-  onlineLayers = layers;
+  // Base: USGS National Map imagery (public domain, United States only). Its tile cache stops at
+  // zoom 16, so closer zooms enlarge the zoom-16 tiles. On top: OpenAerialMap (CC BY 4.0) detail from
+  // zoom 14 wherever someone has mapped the area; elsewhere it is transparent and USGS shows through.
+  const usgs = L.tileLayer(OM_USGS_URL, { maxNativeZoom: OM_USGS_MAX, maxZoom: 21, attribution: OM_CREDIT_USGS });
+  const oam = L.tileLayer(OM_OAM_URL, { minZoom: OM_OAM_MIN, maxZoom: 21, zIndex: 3, attribution: OM_CREDIT_OAM });
+  const oamGrid = L.tileLayer(OM_OAM_URL, { maxZoom: OM_OAM_MIN - 1, opacity: 0.6, zIndex: 3, attribution: OM_CREDIT_OAM });
+  usgs.addTo(map); oam.addTo(map);
+  onlineLayers = { Satellite: usgs };
   // Say why the map is empty instead of leaving a blank square
   let tileOk = 0, tileBad = 0;
-  for (const l of Object.values(layers)) {
-    l.on('tileload', () => { tileOk++; mapHint(); });
-    l.on('tileerror', () => { tileBad++; mapHint(); });
-  }
+  usgs.on('tileload', () => { tileOk++; mapHint(); });
+  usgs.on('tileerror', () => { tileBad++; mapHint(); });
   const mapNoteText = $('mapNote').textContent;
   function mapHint() {
-    const online = Object.values(layers).some(l => map.hasLayer(l));
+    const online = map.hasLayer(usgs);
     const c = map.getCenter();
     const inUS = (c.lat > 17 && c.lat < 72 && c.lng > -180 && c.lng < -64) || (c.lat > 12 && c.lat < 22 && c.lng > 144 && c.lng < 147); // states, territories
     let msg = mapNoteText, cls = 'note';
     if (online && tileBad >= 4 && !tileOk) { msg = 'The USGS map server is not answering (no internet, or the server is down). Saved areas and .pmtiles street maps below still work.'; cls = 'note bad'; }
-    else if (online && !inUS) { msg = 'USGS maps cover the United States only. Move the map over the US, or open a .pmtiles street map below.'; cls = 'note warn'; }
+    else if (online && !inUS) { msg = 'USGS imagery covers the United States only. Elsewhere, OpenAerialMap detail shows from zoom 14 where someone has mapped the area (turn on "OpenAerialMap coverage" in the layer list to see where).'; cls = 'note warn'; }
     $('mapNote').textContent = msg; $('mapNote').className = cls;
   }
   map.on('moveend baselayerchange', mapHint);
-  layersControl = L.control.layers(layers, null, { position: 'topright' }).addTo(map);
+  layersControl = L.control.layers(onlineLayers, { 'OpenAerialMap detail (zoom 14+)': oam, 'OpenAerialMap coverage (zoomed out)': oamGrid }, { position: 'topright' }).addTo(map);
   map.on('moveend zoomend', omEstimate);
-  map.on('baselayerchange', e => { try { localStorage.setItem('gcsMapLayer2', e.name); } catch (err) {} });
   trailLayer = L.polyline([], { color: '#2563eb', weight: 2, opacity: .7 }).addTo(map);
   lineLayer = L.polyline([], { color: '#b45309', weight: 2, dashArray: '6 6' }).addTo(map);
   map.on('dragstart', () => { $('mFollow').checked = false; });
@@ -3384,31 +3370,18 @@ setInterval(() => { if (!port) linkTick(); }, 1000);
 // Tiles and map files live in a folder the user picks (File System Access API), never in the browser.
 // Only the folder / file *handles* are remembered (IndexedDB) so they can be reopened after a reload.
 const OM_MAX_SQMI = 200, OM_MIN_ZOOM = 8, OM_PARALLEL = 6;
-// Map source: USGS The National Map (public domain; USGS asks for a credit line)
-const OM_USGS = { Satellite: 'USGSImageryOnly', Topographic: 'USGSTopo', NAIP: 'USGSNAIPImagery' };
-const OM_NATIVE_MAX = 16; // deepest zoom the USGS tile cache has
-const OM_MAX_ZOOM = { NAIP: 18, Satellite: OM_NATIVE_MAX, Topographic: OM_NATIVE_MAX }; // NAIP is about 0.6 m per pixel
-const OM_NAIP_WMS = 'https://imagery.nationalmap.gov/arcgis/services/USGSNAIPImagery/ImageServer/WMSServer';
-let omNaipLayer = 'USGSNAIPImagery:NaturalColor';
-const OM_CREDIT = { NAIP: 'Imagery: USDA NAIP, USGS The National Map', Satellite: 'Imagery: USDA, USGS The National Map', Topographic: 'USGS The National Map' };
-const OM_KB = { NAIP: 30, Satellite: 25, Topographic: 15 }; // rough average tile size
-const OM_ZOOM_TEXT = { 13: 'towns, main roads', 14: 'roads, fields', 15: 'field edges', 16: 'tree lines, about 2 m per pixel', 17: 'buildings, about 1 m', 18: 'vehicles, sheds, about 0.6 m' };
-function omFillZooms() {
-  const sel = $('omZoom'), max = OM_MAX_ZOOM[$('omLayer').value], keep = +sel.value || max;
-  sel.innerHTML = '';
-  for (let z = 13; z <= max; z++) sel.add(new Option(`${z} (${OM_ZOOM_TEXT[z]})`, z));
-  sel.value = Math.min(keep, max);
-}
-// Web Mercator box of tile z/x/y, for asking the WMS server for exactly that tile
-function omNaipUrl(z, y, x) {
-  const R = 20037508.342789244, size = 2 * R / 2 ** z;
-  const minx = -R + x * size, maxy = R - y * size;
-  return `${OM_NAIP_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${encodeURIComponent(omNaipLayer)}&STYLES=&CRS=EPSG:3857` +
-    `&BBOX=${minx},${maxy - size},${minx + size},${maxy}&WIDTH=256&HEIGHT=256&FORMAT=image/jpeg`;
-}
-function omTileUrl(layer, z = '{z}', y = '{y}', x = '{x}') {
-  return `https://basemap.nationalmap.gov/arcgis/rest/services/${OM_USGS[layer]}/MapServer/tile/${z}/${y}/${x}`;
-}
+// Map sources
+// USGS The National Map imagery: public domain (USGS asks for a credit line), US only, tiles to zoom 16
+const OM_USGS_URL = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}';
+const OM_USGS_MAX = 16;
+const OM_CREDIT_USGS = 'Imagery: USDA, USGS The National Map';
+// OpenAerialMap global tiles: CC BY 4.0 (commercial use allowed with credit). Zoom 14+ is imagery
+// where it exists (transparent elsewhere); below 14 the same address draws a coverage grid.
+const OM_OAM_URL = 'https://global.imagery.hotosm.org/{z}/{x}/{y}.png';
+const OM_OAM_MIN = 14;
+const OM_CREDIT_OAM = 'Detail: © OpenAerialMap contributors, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>';
+const OM_KB_USGS = 25, OM_KB_OAM = 40; // rough average tile sizes
+const omUrl = (t, z, x, y) => t.replace('{z}', z).replace('{x}', x).replace('{y}', y);
 const omCanFs = 'showDirectoryPicker' in window;
 let omDir = null, omJob = null, omAreaLayer = null, omAreaName = '', omPmLayer = null, omPmFile = null;
 
@@ -3459,16 +3432,27 @@ const omSlug = s => s.trim().replace(/[<>:"/\\|?*\x00-\x1f]/g, '').replace(/\s+/
 
 function omEstimate() {
   if (!map) return;
-  const b = map.getBounds(), sq = omSqMi(b), layer = $('omLayer').value;
-  const tiles = omRanges(b, +$('omZoom').value).reduce((t, r) => t + r.count, 0);
+  const b = map.getBounds(), sq = omSqMi(b);
+  const tiles = omRanges(b, OM_USGS_MAX).reduce((t, r) => t + r.count, 0);
   const tooBig = sq > OM_MAX_SQMI;
-  $('omEstimate').innerHTML = `On screen: <b class="${tooBig ? 'bad' : ''}">${sq < 10 ? sq.toFixed(1) : Math.round(sq)} sq mi</b> · ${tiles.toLocaleString()} tiles · about ${omSize(tiles * OM_KB[layer] / 1024)}` +
+  $('omEstimate').innerHTML = `On screen: <b class="${tooBig ? 'bad' : ''}">${sq < 10 ? sq.toFixed(1) : Math.round(sq)} sq mi</b> · USGS: ${tiles.toLocaleString()} tiles, about ${omSize(tiles * OM_KB_USGS / 1024)}` +
+    ($('omOam').checked ? ' · plus OpenAerialMap detail where it exists (size known only after download)' : '') +
     (tooBig ? ` · <span class="bad">zoom in: at most ${OM_MAX_SQMI} sq mi per area</span>` : '');
   $('omDownload').disabled = !omCanFs || !omDir || tooBig || !!omJob;
 }
-omFillZooms();
-$('omLayer').onchange = () => { omFillZooms(); omEstimate(); };
-$('omZoom').onchange = omEstimate;
+$('omOam').onchange = () => { $('omOamZoom').disabled = !$('omOam').checked; omEstimate(); };
+
+// Is this PNG fully transparent? (OpenAerialMap answers with an empty tile where nothing is mapped)
+async function omBlank(blob) {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const c = new OffscreenCanvas(32, 32), g = c.getContext('2d');
+    g.drawImage(bmp, 0, 0, 32, 32);
+    const px = g.getImageData(0, 0, 32, 32).data;
+    for (let k = 3; k < px.length; k += 4) if (px[k]) return false;
+    return true;
+  } catch (e) { return false; }
+}
 
 // --- maps folder
 function omSetDir(h) {
@@ -3510,7 +3494,7 @@ async function omListAreas() {
   for (const { name, a } of areas) {
     const o = document.createElement('option');
     o.value = name;
-    o.textContent = `${name} — ${a.layer}, zoom ${a.maxZoom}${a.complete ? '' : ' (incomplete)'}`;
+    o.textContent = `${name} — zoom ${a.maxZoom}${a.oam && a.oam.tiles ? ', OpenAerialMap detail to ' + a.oam.maxZoom : ''}${a.complete ? '' : ' (incomplete)'}`;
     sel.appendChild(o);
   }
   if (!areas.length) sel.innerHTML = '<option value="">(no saved areas in this folder yet)</option>';
@@ -3521,64 +3505,87 @@ async function omListAreas() {
 $('omRefresh').onclick = () => omDir && omListAreas();
 
 // --- download the area on screen
+// USGS: every tile from zoom 8 to 16. OpenAerialMap: zoom 14 tiles first; only tiles that hold
+// imagery are followed down to the chosen zoom, so unmapped land costs one request per zoom-14 tile.
 $('omDownload').onclick = async () => {
   if (!map || !omDir || omJob) return;
   const name = omSlug($('omName').value);
   if (!name) { $('omName').focus(); $('omProgress').textContent = 'Give the area a name first.'; return; }
-  const b = map.getBounds(), layer = $('omLayer').value, maxZoom = +$('omZoom').value;
-  const sq = omSqMi(b);
+  const b = map.getBounds(), sq = omSqMi(b);
   if (sq > OM_MAX_SQMI) return;
-  const ranges = omRanges(b, maxZoom), total = ranges.reduce((t, r) => t + r.count, 0);
+  const withOam = $('omOam').checked, oamMax = +$('omOamZoom').value;
+  const ranges = omRanges(b, OM_USGS_MAX), usgsTotal = ranges.reduce((t, r) => t + r.count, 0);
+  const oamStart = withOam ? omRanges(b, OM_OAM_MIN).find(r => r.z === OM_OAM_MIN) : null;
   const ok = await ask({ title: `Download “${name}”?`, ok: 'Download',
-    body: `<p>${sq.toFixed(1)} sq mi of <b>${$('omLayer').selectedOptions[0].text}</b>, zoom ${OM_MIN_ZOOM}–${maxZoom}: <b>${total.toLocaleString()} tiles</b>, about <b>${omSize(total * OM_KB[layer] / 1024)}</b>.</p>
-      <p>Saved to <b>${omDir.name}\\${name}</b>. At roughly 10–30 tiles a second this takes about ${Math.max(1, Math.round(total / 15 / 60))} min. Keep this tab open; you can stop and resume later.</p>
-      <p class="quiet">${OM_CREDIT[layer]} (public domain). Covers the United States only.</p>` });
+    body: `<p>${sq.toFixed(1)} sq mi. <b>USGS imagery</b>, zoom ${OM_MIN_ZOOM}–${OM_USGS_MAX}: <b>${usgsTotal.toLocaleString()} tiles</b>, about <b>${omSize(usgsTotal * OM_KB_USGS / 1024)}</b>.</p>
+      ${withOam ? `<p><b>OpenAerialMap detail</b> down to zoom ${oamMax}, only where the area has been mapped: ${oamStart.count.toLocaleString()} checks, then the detail found.</p>` : ''}
+      <p>Saved to <b>${omDir.name}\\${name}</b>. Keep this tab open; you can stop and resume later.</p>
+      <p class="quiet">${OM_CREDIT_USGS} (public domain).${withOam ? ' Detail imagery © OpenAerialMap contributors, CC BY 4.0.' : ''}</p>` });
   if (!ok) return;
   if (!await omPermitted(omDir, true)) { $('omProgress').textContent = 'Permission to write to the folder was refused.'; return; }
 
   const job = omJob = { stop: false };
   $('omCancel').style.display = ''; $('omBar').style.display = ''; omEstimate();
   const areaDir = await omDir.getDirectoryHandle(name, { create: true });
-  const meta = { name, layer, source: OM_USGS[layer], minZoom: OM_MIN_ZOOM, maxZoom,
-    bounds: [[b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]], tiles: total, created: new Date().toISOString(), complete: false };
+  const oamDir = withOam ? await areaDir.getDirectoryHandle('oam', { create: true }) : null;
+  const meta = { name, minZoom: OM_MIN_ZOOM, maxZoom: OM_USGS_MAX, oam: withOam ? { minZoom: OM_OAM_MIN, maxZoom: oamMax, tiles: 0 } : null,
+    bounds: [[b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]], tiles: usgsTotal, created: new Date().toISOString(), complete: false,
+    credit: OM_CREDIT_USGS + (withOam ? '; detail imagery © OpenAerialMap contributors, CC BY 4.0' : '') };
   const writeMeta = async () => { const w = await (await areaDir.getFileHandle('area.json', { create: true })).createWritable(); await w.write(JSON.stringify(meta, null, 1)); await w.close(); };
   await writeMeta();
 
   const dirs = new Map();
-  const dirFor = async (z, x) => {
-    const k = z + '/' + x;
-    if (!dirs.has(k)) dirs.set(k, (async () => (await (await areaDir.getDirectoryHandle(String(z), { create: true })).getDirectoryHandle(String(x), { create: true })))());
+  const dirFor = async (root, key, z, x) => {
+    const k = key + z + '/' + x;
+    if (!dirs.has(k)) dirs.set(k, (async () => (await (await root.getDirectoryHandle(String(z), { create: true })).getDirectoryHandle(String(x), { create: true })))());
     return dirs.get(k);
   };
-  function* allTiles() { for (const r of ranges) for (let x = r.x0; x <= r.x1; x++) for (let y = r.y0; y <= r.y1; y++) yield [r.z, x, y]; }
-  const it = allTiles();
-  let done = 0, saved = 0, skipped = 0, missing = 0, failed = 0, bytes = 0, lastUi = 0;
+  const boxes = {};
+  for (const r of omRanges(b, 21)) boxes[r.z] = r;
+  const inBox = (z, x, y) => { const r = boxes[z]; return x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1; };
+  // Work queue: USGS tiles, then OpenAerialMap zoom-14 tiles (children are added as imagery is found)
+  const queue = [];
+  for (const r of ranges) for (let x = r.x0; x <= r.x1; x++) for (let y = r.y0; y <= r.y1; y++) queue.push(['u', r.z, x, y]);
+  if (withOam) for (let x = oamStart.x0; x <= oamStart.x1; x++) for (let y = oamStart.y0; y <= oamStart.y1; y++) queue.push(['o', OM_OAM_MIN, x, y]);
+  let qi = 0, total = queue.length;
+  let done = 0, saved = 0, skipped = 0, missing = 0, failed = 0, bytes = 0, oamTiles = 0, lastUi = 0;
   const t0 = Date.now();
   const ui = force => {
     if (!force && Date.now() - lastUi < 250) return;
     lastUi = Date.now();
-    const rate = saved / Math.max(1, (Date.now() - t0) / 1000);
+    const rate = (saved + missing) / Math.max(1, (Date.now() - t0) / 1000);
     const left = rate > 0 ? Math.round((total - done) / rate / 60) : null;
     $('omBar').firstElementChild.style.width = (100 * done / total).toFixed(1) + '%';
     $('omProgress').textContent = `${done.toLocaleString()} / ${total.toLocaleString()} tiles · ${omSize(bytes / 1048576)} written` +
-      (skipped ? ` · ${skipped.toLocaleString()} already saved` : '') + (missing ? ` · ${missing} without imagery` : '') +
+      (oamTiles ? ` · ${oamTiles.toLocaleString()} OpenAerialMap detail tiles` : '') +
+      (skipped ? ` · ${skipped.toLocaleString()} already saved` : '') + (missing ? ` · ${missing.toLocaleString()} without imagery` : '') +
       (failed ? ` · ${failed} failed` : '') + (left !== null && done < total ? ` · about ${left} min left` : '');
   };
-  async function one([z, x, y]) {
-    const d = await dirFor(z, x);
-    for (const ext of ['jpg', 'png']) { try { await d.getFileHandle(y + '.' + ext); skipped++; return; } catch (e) {} }
-    const url = layer === 'NAIP' ? omNaipUrl(z, y, x) : omTileUrl(layer, z, y, x);
+  const addChildren = (z, x, y) => {
+    if (z >= oamMax) return;
+    for (const [cx, cy] of [[2 * x, 2 * y], [2 * x + 1, 2 * y], [2 * x, 2 * y + 1], [2 * x + 1, 2 * y + 1]])
+      if (inBox(z + 1, cx, cy)) { queue.push(['o', z + 1, cx, cy]); total++; }
+  };
+  async function one([src, z, x, y]) {
+    const isOam = src === 'o';
+    const d = await dirFor(isOam ? oamDir : areaDir, src, z, x);
+    for (const ext of ['jpg', 'png']) {
+      try { await d.getFileHandle(y + '.' + ext); skipped++; if (isOam) { oamTiles++; addChildren(z, x, y); } return; } catch (e) {}
+    }
+    const url = omUrl(isOam ? OM_OAM_URL : OM_USGS_URL, z, x, y);
     for (let attempt = 0; attempt < 3 && !job.stop; attempt++) {
       try {
         const r = await fetch(url);
-        if (r.status === 404) { missing++; return; }
+        if (r.status === 404 || r.status === 204) { missing++; return; }
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const blob = await r.blob();
         if (!/^image\//.test(blob.type)) throw new Error('the map server sent an error instead of an image');
+        if (isOam && await omBlank(blob)) { missing++; return; } // nothing mapped here
         const ext = /png/.test(blob.type) ? 'png' : 'jpg';
         const w = await (await d.getFileHandle(y + '.' + ext, { create: true })).createWritable();
         await w.write(blob); await w.close();
         bytes += blob.size; saved++;
+        if (isOam) { oamTiles++; addChildren(z, x, y); }
         return;
       } catch (e) {
         if (attempt === 2) { failed++; job.lastError = e.message; return; }
@@ -3586,12 +3593,19 @@ $('omDownload').onclick = async () => {
       }
     }
   }
-  const worker = async () => { for (let n = it.next(); !n.done && !job.stop; n = it.next()) { await one(n.value); done++; ui(); } };
+  const worker = async () => {
+    while (!job.stop) {
+      if (qi >= queue.length) { if (done >= total) return; await sleep(50); continue; } // children may still be coming
+      const item = queue[qi++];
+      await one(item); done++; ui();
+    }
+  };
   try {
     await Promise.all(Array.from({ length: OM_PARALLEL }, worker));
     ui(true);
     meta.complete = !job.stop && failed === 0;
     meta.bytes = bytes; meta.missing = missing;
+    if (meta.oam) meta.oam.tiles = oamTiles;
     await writeMeta();
     $('omProgress').textContent += job.stop ? ' · stopped (download again with the same name to resume)'
       : failed ? ` · finished with ${failed} failed tiles (${job.lastError || 'network error'}); download again to fill them in`
@@ -3637,16 +3651,23 @@ $('omShow').onclick = async () => {
   const name = $('omAreas').value, dirH = await omDir.getDirectoryHandle(name), a = await omReadArea(dirH);
   if (!a) { $('omAreaInfo').textContent = 'That folder has no readable area.json.'; return; }
   omRemoveArea();
-  omAreaLayer = new OmTileLayer('', { dir: dirH, bounds: a.bounds, minNativeZoom: a.minZoom, maxNativeZoom: a.maxZoom,
-    maxZoom: 21, zIndex: 5, attribution: /^World_/.test(a.source || '') ? 'Saved imagery © Esri' : 'Saved: ' + (OM_CREDIT[a.layer] || 'USGS The National Map') });
-  omAreaLayer.on('tileunload', e => { if (e.tile.src.startsWith('blob:')) URL.revokeObjectURL(e.tile.src); });
-  omAreaLayer.addTo(map);
+  const revoke = e => { if (e.tile.src.startsWith('blob:')) URL.revokeObjectURL(e.tile.src); };
+  const parts = [new OmTileLayer('', { dir: dirH, bounds: a.bounds, minNativeZoom: a.minZoom, maxNativeZoom: a.maxZoom,
+    maxZoom: 21, zIndex: 5, attribution: 'Saved: ' + (a.credit || 'map imagery') })];
+  if (a.oam) {
+    let od = null;
+    try { od = await dirH.getDirectoryHandle('oam'); } catch (e) {}
+    if (od) parts.push(new OmTileLayer('', { dir: od, bounds: a.bounds, minZoom: a.oam.minZoom, minNativeZoom: a.oam.minZoom, maxNativeZoom: a.oam.maxZoom, maxZoom: 21, zIndex: 6 }));
+  }
+  parts.forEach(l => l.on('tileunload', revoke));
+  omAreaLayer = L.layerGroup(parts).addTo(map);
   layersControl.addOverlay(omAreaLayer, 'Saved: ' + name);
   omAreaName = name;
   $('omHide').disabled = false;
   $('mFollow').checked = false;
   map.fitBounds(a.bounds);
-  $('omAreaInfo').textContent = `Showing “${name}”: ${a.layer}, zoom ${a.minZoom}–${a.maxZoom}` +
+  $('omAreaInfo').textContent = `Showing “${name}”: zoom ${a.minZoom}–${a.maxZoom}` +
+    (a.oam ? `, plus ${(a.oam.tiles || 0).toLocaleString()} OpenAerialMap detail tiles to zoom ${a.oam.maxZoom}` : '') +
     (a.bytes ? `, ${omSize(a.bytes / 1048576)}` : '') + (a.complete ? '' : ' (incomplete: download it again to finish)') + '.';
 };
 $('omHide').onclick = () => { omRemoveArea(); $('omAreaInfo').textContent = ''; };
