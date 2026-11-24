@@ -479,37 +479,7 @@ return maplibregl$1;
 
   <!-- ===================================================== GROUND STATION -->
   <section class="tab" id="tab-gcs">
-    <div class="grid">
-      <div class="card">
-        <h2>RC rate to aircraft</h2>
-        <p class="note" style="margin-top:0">RC_CHANNELS_OVERRIDE frames per second over the RFD900. Higher is more responsive but uses more of the 57600-baud link (about 0.9% per Hz).</p>
-        <div class="row">
-          <select id="rcHz">
-            <option>5</option><option>10</option><option>15</option><option selected>20</option>
-            <option>25</option><option>30</option><option>40</option><option>50</option>
-          </select>
-          <button id="btnRcHz" disabled>Apply</button>
-        </div>
-      </div>
-      <div class="card">
-        <h2>Ground position to aircraft</h2>
-        <p class="note" style="margin-top:0">Sends GLOBAL_POSITION_INT at 2 Hz as system 255 when the GPS has a fix. For ArduPilot Follow mode set <code>FOLL_ENABLE=1</code> and <code>FOLL_SYSID=255</code>.</p>
-        <div class="row">
-          <label><input id="follow" type="checkbox"> Send ground position</label>
-          <button id="btnFollow" disabled>Apply</button>
-        </div>
-      </div>
-      <div class="card">
-        <h2>Board</h2>
-        <div class="row" style="margin-top:0">
-          <input id="nameIn" maxlength="32" placeholder="Name shown at the top of this page" style="flex:1;min-width:180px">
-          <button id="btnName" disabled>Save name</button>
-        </div>
-        <p class="note">A reboot drops the handset link and stops RC to the aircraft for about 3 seconds. Blocked while the aircraft is armed.</p>
-        <div class="row"><button id="btnReboot" class="ghost danger" disabled>Reboot ground station</button></div>
-      </div>
-    </div>
-    <h2 class="mt" style="margin-bottom:10px">GPS and map</h2>
+    <h2 style="margin-bottom:10px">GPS and map</h2>
 
     <div class="card">
       <div class="row" style="margin-top:0">
@@ -549,6 +519,36 @@ return maplibregl$1;
         <div class="scroll"><table id="mTable"><thead><tr><th>#</th><th>Command</th><th>Alt (m)</th><th>Param</th><th>Latitude</th><th>Longitude</th><th>Leg</th><th></th></tr></thead><tbody></tbody></table></div>
       </div>
       <div id="mStatus" class="note">Turn on <b>Add waypoints</b>, then click the map. Drag markers to move them. Files use Mission Planner's .waypoints format.</div>
+    </div>
+    <div class="grid mt">
+      <div class="card">
+        <h2>RC rate to aircraft</h2>
+        <p class="note" style="margin-top:0">RC_CHANNELS_OVERRIDE frames per second over the RFD900. Higher is more responsive but uses more of the 57600-baud link (about 0.9% per Hz).</p>
+        <div class="row">
+          <select id="rcHz">
+            <option>5</option><option>10</option><option>15</option><option selected>20</option>
+            <option>25</option><option>30</option><option>40</option><option>50</option>
+          </select>
+          <button id="btnRcHz" disabled>Apply</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Ground position to aircraft</h2>
+        <p class="note" style="margin-top:0">Sends GLOBAL_POSITION_INT at 2 Hz as system 255 when the GPS has a fix. For ArduPilot Follow mode set <code>FOLL_ENABLE=1</code> and <code>FOLL_SYSID=255</code>.</p>
+        <div class="row">
+          <label><input id="follow" type="checkbox"> Send ground position</label>
+          <button id="btnFollow" disabled>Apply</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Board</h2>
+        <div class="row" style="margin-top:0">
+          <input id="nameIn" maxlength="32" placeholder="Name shown at the top of this page" style="flex:1;min-width:180px">
+          <button id="btnName" disabled>Save name</button>
+        </div>
+        <p class="note">A reboot drops the handset link and stops RC to the aircraft for about 3 seconds. Blocked while the aircraft is armed.</p>
+        <div class="row"><button id="btnReboot" class="ghost danger" disabled>Reboot ground station</button></div>
+      </div>
     </div>
     <div class="grid mt">
       <div class="card">
