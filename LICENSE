@@ -31,3 +31,12 @@ font glyphs).
 Their copyright notices and full license texts are in the About tab of
 index.html and are listed in README.md. indexRFD.html contains no third-party
 code.
+
+Map content
+
+The map in index.html loads basemap tiles from Esri (World Imagery, World Street
+Map, World Topographic Map). That content is not part of this repository, is not
+covered by the license above and is subject to Esri's terms of use, which do not
+permit commercial use without an Esri license. The map feature of index.html is
+therefore intended for personal / non-commercial use. indexRFD.html contains no
+map content.

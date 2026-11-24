@@ -6,8 +6,11 @@ https://narl3yyy-svg.github.io/gcs-settings/ (Chrome or Edge on a PC, Chrome on 
 ## Pages
 
 - `index.html`: the full ground station (Status, Air, ELRS, Ground station with map, RFD900, About).
+  **Personal / non-commercial use:** its map uses Esri basemaps under Esri's terms (see
+  [Map data](#map-data)), so this page is not sold.
 - `indexRFD.html`: only the RFD900 tools: Load/Save settings for both radios, RFD900
-  temperatures, AT console and command reference. No third-party code, works offline. Live at
+  temperatures, AT console and command reference. No third-party code, no map content, works
+  offline. **This is the commercial product.** Live at
   https://narl3yyy-svg.github.io/gcs-settings/indexRFD.html.
 
 ## Dependencies
@@ -76,8 +79,7 @@ d3-color (BSD-3-Clause); these notices are part of its license text in the About
 
 | Service | Contacted when | Without internet |
 |---|---|---|
-| USGS The National Map (`basemap.nationalmap.gov`) | Satellite imagery (base map), and "Download area" | Use saved areas or a `.pmtiles` file |
-| USGS NAIP imagery (`imagery.nationalmap.gov`) | Only "Download area" with **High detail** ticked | Use saved areas |
+| Esri ArcGIS Online basemaps (`server.arcgisonline.com`) | Map in `index.html` (Satellite, Streets, Topographic), and "Download area" | Use saved areas or a `.pmtiles` file |
 | GitHub Pages | Opening the live site | Open a saved copy of the page |
 | ardupilot.org | Only when a parameter name is clicked, to open its documentation | Not needed |
 
@@ -107,24 +109,20 @@ names to endorse or promote this product.
 
 ### Map data
 
-- **USGS The National Map** (satellite base map, online and saved): public domain; free to use,
-  including commercially and offline. USGS asks for a credit line: *"Map services and data
-  available from U.S. Geological Survey, National Geospatial Program."* Imagery is credited "USDA,
-  USGS The National Map". Coverage is the United States only; tiles go to zoom 16 (about 2 m per
-  pixel) and are enlarged beyond that.
-- **NAIP aerial imagery** (optional **High detail** in saved areas): National Agriculture Imagery
-  Program, U.S. Department of Agriculture, Farm Service Agency, served by USGS The National Map.
-  Listed as public domain; free to use, including commercially and offline. Credited "USDA NAIP,
-  USGS The National Map". USDA considered moving NAIP to a paid license in 2017–2018; it is still
-  listed as public domain, but check the USDA FSA NAIP page if that changes.
+- **Esri basemaps** (map in `index.html`, online and saved): World Imagery (Imagery © Esri, Maxar,
+  Earthstar Geographics, and the GIS User Community), World Street Map and World Topographic Map
+  (© Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS User Community). Used under
+  Esri's terms of use. Those terms do not allow commercial use without an Esri license and limit
+  keeping tiles offline, so the map feature is for **personal / non-commercial use only** and is
+  **not part of the commercial product**. Users are responsible for complying with Esri's terms,
+  including for areas saved with "Download area". The map shows Esri's credit lines.
 - **OpenStreetMap** (`.pmtiles` street map files supplied by the user): © OpenStreetMap
   contributors, under the Open Database License (ODbL). Commercial use is allowed with this
   credit, which the map shows.
-- **No longer used:** Esri (until 2026-11-23), USGS Topographic and OpenAerialMap (until
-  2026-11-24). NAIP is no longer a live map layer, only the optional High detail download.
-  Areas saved from Esri with older versions must be deleted before selling or sharing the
-  product: Esri's terms do not allow keeping their tiles offline or commercial use without a paid
-  license. Areas saved from USGS NAIP or Topographic are public domain and can be kept.
+- **Commercial product:** `indexRFD.html` contains no map content and no third-party code, so
+  none of the above applies to it.
+- **Earlier map sources** (USGS, NAIP, OpenAerialMap) are no longer used. Areas saved from them
+  are public domain or CC BY 4.0 and can be kept.
 
 ### Trademarks
 
@@ -143,17 +141,25 @@ license text stay with it (credit to narl3yyy-svg). It comes with no warranty.
 
 ## Changes
 
-### 2026-11-24: High-detail offline areas
+### 2026-11-24: Esri maps back (index.html for non-commercial use)
 
-- "Download area" has a **High detail** option: USDA NAIP aerial photos (about 0.6 m per pixel,
-  roughly 3 times sharper than the USGS map) saved down to zoom 17, 18 or 19 on top of the
-  normal USGS tiles. The live map stays on the fast USGS imagery; NAIP is only fetched while
-  downloading.
-- High detail downloads slowly because the server draws each square (the page shows an
-  estimate, e.g. 200 sq mi to zoom 18 is about 45,000 tiles, about 1.3 GB and a few hours), but
-  only once: the saved area then opens instantly, offline. Stop and resume work as before.
-- Saved areas show the high-detail photos from zoom 17 and enlarge them beyond the deepest
-  saved zoom. Lower 48 states. Credit added to the About tab and README.
+- The map in `index.html` uses **Esri** again: Satellite (sharp to about zoom 19, worldwide),
+  Streets and Topographic, chosen at the top right of the map, in the MapLibre viewer (smooth
+  zoom, rotation and tilt).
+- "Download area" saves the chosen Esri map down to a chosen closest zoom (15–19), 8 tiles at a
+  time; Stop and resume work as before.
+- Because Esri's terms do not allow commercial use without a license, `index.html` and its map
+  feature are for personal / non-commercial use. The product for sale is `indexRFD.html`, which
+  has no map content. The About tab, this README and `LICENSE` say so.
+- USGS imagery removed.
+
+### 2026-11-24: Stop button fixed; high-detail NAIP option removed
+
+- **Stop** in "Download area" now stops at once: requests still waiting on the map server are
+  cancelled, and any request that gets no answer within 20 s is given up and retried later.
+  Download again with the same name to resume.
+- The short-lived "High detail (NAIP)" download option was removed (too slow). Saved areas use
+  USGS imagery only.
 
 ### 2026-11-24: MapLibre map, USGS imagery only
 
