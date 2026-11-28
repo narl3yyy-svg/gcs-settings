@@ -1765,7 +1765,9 @@ $('btnConnect').onclick = async () => {
   } catch (e) {
     if (e.name === 'NotFoundError') return; // nothing picked
     banner(!USE_WEBUSB
-      ? 'Could not open the port: ' + e.message + '. Is Mission Planner or a terminal using it?'
+      ? 'Could not open the port: ' + e.message + (/Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent)
+        ? '. On Linux your user needs serial access: run "sudo usermod -aG dialout $USER" (on Arch: uucp), then log out and back in. Also close any terminal or Mission Planner using the port.'
+        : '. Is Mission Planner or a terminal using it?')
       : 'Could not open the board: ' + e.message + '. Close other USB serial apps and plug it in again.');
   }
 };
